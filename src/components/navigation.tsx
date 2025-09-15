@@ -14,7 +14,7 @@ export function Navigation() {
     { name: "Community", href: "/community", icon: Users },
     
     { name: "AI Predictions", href: "/ai-predictions", icon: Brain },
-    { name: "Admin", href: "/admin", icon: Shield },
+   
     { name: "About", href: "/about", icon: Info },
   ]
 
@@ -51,17 +51,13 @@ export function Navigation() {
 
           {/* CTA Buttons */}
           <div className="hidden md:flex items-center space-x-4">
-            <Link href="/report-disaster">
-              <Button
-                variant="outline"
-                className="border-primary text-primary hover:bg-primary hover:text-primary-foreground glow-green-hover bg-transparent"
-              >
-                Report Disaster
-              </Button>
-            </Link>
+
+              
+            <Link href="/Auth/login">
             <Button className="bg-primary hover:bg-primary/90 text-primary-foreground glow-green">
-              Explore Platform
+              Sigin
             </Button>
+            </Link>
           </div>
 
           {/* Mobile menu button */}

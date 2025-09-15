@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Navigation } from "@/components/navigation"
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -9,6 +9,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Switch } from "@/components/ui/switch"
 import { Progress } from "@/components/ui/progress"
 import { Textarea } from "@/components/ui/textarea"
+
+
+import Link from "next/link"
+
+import { Menu, X, Info,  Brain } from "lucide-react"
 import {
   Shield,
   Users,
@@ -82,6 +87,114 @@ const responseTeams: ResponseTeam[] = [
   { id: "4", name: "Police Unit 23", type: "police", status: "available", location: "City Center", members: 12 },
 ]
 
+
+function Navigation() {
+  const [isOpen, setIsOpen] = useState(false)
+
+  const navItems = [
+    { name: "Dashboard", href: "/admin-dashboard", icon: Activity },
+
+    
+    { name: "AI Predictions", href: "/ai-predictions", icon: Brain },
+   
+
+  ]
+
+  return (
+    <nav className="fixed top-0 w-full z-50 bg-background/80 backdrop-blur-md border-b border-border">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16">
+          {/* Logo */}
+          <Link href="/" className="flex items-center space-x-2 group">
+            <div className="w-8 h-8 bg-gradient-cyber rounded-lg flex items-center justify-center glow-green-hover">
+              <Shield className="w-5 h-5 text-background" />
+            </div>
+            <span className="text-xl font-bold text-glow-green">DisasterWatch</span>
+          </Link>
+
+          {/* Desktop Navigation */}
+          <div className="hidden md:block">
+            <div className="ml-130 flex justify-end items-end space-x-4">
+              {navItems.map((item) => {
+                const Icon = item.icon
+                return (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    className="flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium text-foreground hover:text-primary hover:bg-secondary/50 transition-all duration-300 glow-green-hover"
+                  >
+                    <Icon className="w-4 h-4" />
+                    <span>{item.name}</span>
+                  </Link>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* CTA Buttons */}
+          <div className="hidden md:flex items-center space-x-4">
+
+              
+            <Link href="/Auth/login">
+            <Button className="bg-primary hover:bg-primary/90 text-primary-foreground glow-green">
+              logout
+            </Button>
+            </Link>
+          </div>
+
+          {/* Mobile menu button */}
+          <div className="md:hidden">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsOpen(!isOpen)}
+              className="text-foreground hover:text-primary"
+            >
+              {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </Button>
+          </div>
+        </div>
+
+        {/* Mobile Navigation */}
+        {isOpen && (
+          <div className="md:hidden">
+            <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-card/50 backdrop-blur-sm rounded-lg mt-2 border border-border">
+              {navItems.map((item) => {
+                const Icon = item.icon
+                return (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    className="flex items-center space-x-2 px-3 py-2 rounded-md text-base font-medium text-foreground hover:text-primary hover:bg-secondary/50 transition-all duration-300"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    <Icon className="w-4 h-4" />
+                    <span>{item.name}</span>
+                  </Link>
+                )
+              })}
+              <div className="pt-4 space-y-2">
+                <Link href="/report-disaster">
+                  <Button
+                    variant="outline"
+                    className="w-full border-primary text-primary hover:bg-primary hover:text-primary-foreground bg-transparent"
+                  >
+                    Report Disaster
+                  </Button>
+                </Link>
+                <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">
+                  Explore Platform
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </nav>
+  )
+}
+
+
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("overview")
   const [alertsEnabled, setAlertsEnabled] = useState(true)
@@ -144,12 +257,12 @@ export default function AdminDashboard() {
           </div>
 
           {/* Quick Stats */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
             {[
               { label: "Pending Reports", value: "8", icon: FileText, color: "text-yellow-400" },
               { label: "Active Teams", value: "47", icon: Users, color: "text-primary" },
               { label: "System Uptime", value: "99.8%", icon: Activity, color: "text-primary" },
-              { label: "Blockchain Records", value: "1,247", icon: Database, color: "text-primary" },
+            
             ].map((stat, index) => {
               const Icon = stat.icon
               return (
@@ -172,7 +285,7 @@ export default function AdminDashboard() {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-5 bg-gray-900/50 border border-primary/20">
+            <TabsList className="grid w-full grid-cols-4 bg-gray-900/50 border border-primary/20">
               <TabsTrigger
                 value="overview"
                 className="data-[state=active]:bg-primary data-[state=active]:text-black text-gray-300"
@@ -194,13 +307,7 @@ export default function AdminDashboard() {
                 <Users className="w-4 h-4 mr-2" />
                 Teams
               </TabsTrigger>
-              <TabsTrigger
-                value="blockchain"
-                className="data-[state=active]:bg-primary data-[state=active]:text-black text-gray-300"
-              >
-                <Database className="w-4 h-4 mr-2" />
-                Blockchain
-              </TabsTrigger>
+         
               <TabsTrigger
                 value="notices"
                 className="data-[state=active]:bg-primary data-[state=active]:text-black text-gray-300"
