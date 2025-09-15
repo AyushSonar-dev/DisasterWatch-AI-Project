@@ -71,5 +71,10 @@
     "typescript": "^5.9.2",
     "vaul": "^1.1.2",
     "zod": "^4.1.5"
+  },
+  "dependencies": {
+    "auth": "^1.2.3",
+    "next-auth": "^4.24.11",
+    "react-hot-toast": "^2.6.0"
   }
 }

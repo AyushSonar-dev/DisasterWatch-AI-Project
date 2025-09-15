@@ -385,7 +385,7 @@ export default function PrecautionsPage() {
                   <CardContent className="space-y-3">
                     <div className="p-3 bg-red-500/10 rounded-lg border border-red-500/30">
                       <div className="font-medium text-red-400">Emergency Services</div>
-                      <div className="text-2xl font-bold text-red-400">911</div>
+                      <div className="text-2xl font-bold text-red-400">100</div>
                     </div>
                     <div className="space-y-2">
                       <div className="flex justify-between">

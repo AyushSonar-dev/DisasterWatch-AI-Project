@@ -12,7 +12,7 @@ export function Navigation() {
     { name: "Dashboard", href: "/dashboard", icon: Activity },
     { name: "Precautions", href: "/precautions", icon: Shield },
     { name: "Community", href: "/community", icon: Users },
-    { name: "Blockchain", href: "/blockchain", icon: Database },
+    
     { name: "AI Predictions", href: "/ai-predictions", icon: Brain },
     { name: "Admin", href: "/admin", icon: Shield },
     { name: "About", href: "/about", icon: Info },
@@ -51,13 +51,17 @@ export function Navigation() {
 
           {/* CTA Buttons */}
           <div className="hidden md:flex items-center space-x-4">
-            <Button
-              variant="outline"
-              className="border-primary text-primary hover:bg-primary hover:text-primary-foreground glow-green-hover bg-transparent"
-            >
-              Report Disaster
+            <Link href="/report-disaster">
+              <Button
+                variant="outline"
+                className="border-primary text-primary hover:bg-primary hover:text-primary-foreground glow-green-hover bg-transparent"
+              >
+                Report Disaster
+              </Button>
+            </Link>
+            <Button className="bg-primary hover:bg-primary/90 text-primary-foreground glow-green">
+              Explore Platform
             </Button>
-            <Button className="bg-primary hover:bg-primary/90 glow-green">Explore Platform</Button>
           </div>
 
           {/* Mobile menu button */}
@@ -92,13 +96,17 @@ export function Navigation() {
                 )
               })}
               <div className="pt-4 space-y-2">
-                <Button
-                  variant="outline"
-                  className="w-full border-primary text-primary hover:bg-primary hover:text-primary-foreground bg-transparent"
-                >
-                  Report Disaster
+                <Link href="/report-disaster">
+                  <Button
+                    variant="outline"
+                    className="w-full border-primary text-primary hover:bg-primary hover:text-primary-foreground bg-transparent"
+                  >
+                    Report Disaster
+                  </Button>
+                </Link>
+                <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">
+                  Explore Platform
                 </Button>
-                <Button className="w-full bg-primary hover:bg-primary/90">Explore Platform</Button>
               </div>
             </div>
           </div>
