@@ -37,7 +37,7 @@ export default function LoginPage() {
     if (!validateForm()) return
 
     const role = formData.email.includes("admin") ? "admin" : "user"
-    const success = await login(formData.email, formData.password, role)
+    const success = await login(formData.email, formData.password)
 
     if (success) {
       // Redirect based on role

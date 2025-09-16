@@ -28,7 +28,7 @@ export default function RootLayout({
             <Suspense fallback={null}>
               {children}
               <Toaster />
-            </Suspense>x
+            </Suspense>
           </ThemeProvider>
         </AuthProvider>
         <Analytics />

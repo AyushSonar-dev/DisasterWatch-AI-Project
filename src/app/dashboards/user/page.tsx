@@ -35,6 +35,7 @@ import {
   TrendingUp,
   Eye,
 } from "lucide-react";
+import { account } from "@/lib/appwrite/config";
 
 interface Disaster {
   id: string;
@@ -56,7 +57,14 @@ interface DisasterAlert {
   timestamp: string;
   location: string;
 }
-
+const logouthandler=async()=>{
+  try {
+    await account.deleteSession("current");
+    window.location.href = "/"; // Redirect to login page
+  } catch (err) {
+    console.error("Logout failed:", err);
+  } 
+}
 const mockDisasters: Disaster[] = [
   {
     id: "1",
@@ -161,7 +169,7 @@ function Navigation() {
 
           {/* CTA Buttons */}
           <div className="hidden md:flex items-center space-x-4">
-            <Link href="/Auth/login">
+            <Link  onClick={logouthandler} href="/Auth/login">
               <Button className="bg-primary hover:bg-primary/90 text-primary-foreground glow-green">
                 logout
               </Button>

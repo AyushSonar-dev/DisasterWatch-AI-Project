@@ -73,6 +73,8 @@
     "zod": "^4.1.5"
   },
   "dependencies": {
+    "@next/env": "^15.5.3",
+    "appwrite": "^13.0.0",
     "auth": "^1.2.3",
     "next-auth": "^4.24.11",
     "react-hot-toast": "^2.6.0"
