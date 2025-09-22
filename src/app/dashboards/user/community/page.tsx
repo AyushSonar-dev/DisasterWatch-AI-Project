@@ -1,6 +1,7 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { Query } from "appwrite";
+import { useEffect, useRef, useState } from "react";
 import { Navigation } from "@/components/navigation";
 import {
   Card,
@@ -40,39 +41,39 @@ import { useAuth } from "@/lib/auth";
 import { db, storage } from "@/lib/appwrite/config";
 import { ID } from "appwrite";
 import { Router } from "next/router";
+import { report } from "process";
 
 interface DisasterReport {
   id: string;
+  $id?: string;
   type: "Earthquake" | "Flood" | "Wildfire" | "Storm";
   title: string;
   description: string;
   location: string;
-  coordinates: [number, number];
+  coordinates?: [number, number];
   severity: "low" | "medium" | "high" | "critical";
-  status: "unverified" | "verified" | "investigating";
-  reporter: {
-    name: string;
-    avatar: string;
-    reputation: number;
-  };
-  timestamp: string;
-  likes: number;
-  comments: number;
+  status?: "unverified" | "verified" | "investigating";
+  userName: string; // just a string now
+  reputation?: number;
+  $createdAt: string;
+  likes?: number;
+  comments?: number;
   images?: string[];
-  tags: string[];
+  tags?: string[];
+  files?: string[]; // Add this property to match the usage in the code
 }
 
 interface ForumPost {
   id: string;
   author: {
     name: string;
-    avatar: string;
+    userAvatar: string;
     role: "community" | "responder" | "expert";
     reputation: number;
   };
   title: string;
   content: string;
-  timestamp: string;
+  $createdAt: string;
   likes: number;
   replies: number;
   category: "general" | "preparedness" | "recovery" | "resources";
@@ -91,12 +92,8 @@ const mockReports: DisasterReport[] = [
     coordinates: [38.0834, -122.7633],
     severity: "high",
     status: "verified",
-    reporter: {
-      name: "Sarah Chen",
-      avatar: "/diverse-woman-portrait.png",
-      reputation: 95,
-    },
-    timestamp: "15 minutes ago",
+    userName: "Sarah Chen",
+    $createdAt: "15 minutes ago",
     likes: 23,
     comments: 8,
     images: ["/wildfire.jpg"],
@@ -112,12 +109,8 @@ const mockReports: DisasterReport[] = [
     coordinates: [30.2672, -97.7431],
     severity: "medium",
     status: "investigating",
-    reporter: {
-      name: "Mike Rodriguez",
-      avatar: "/thoughtful-man.png",
-      reputation: 78,
-    },
-    timestamp: "32 minutes ago",
+    userName: "Mike Rodriguez",
+    $createdAt: "32 minutes ago",
     likes: 15,
     comments: 12,
     tags: ["flooding", "downtown", "rescue"],
@@ -132,12 +125,8 @@ const mockReports: DisasterReport[] = [
     coordinates: [37.7749, -122.4194],
     severity: "medium",
     status: "verified",
-    reporter: {
-      name: "Dr. Lisa Park",
-      avatar: "/scientist-in-lab.png",
-      reputation: 100,
-    },
-    timestamp: "1 hour ago",
+    userName: "Dr. Lisa Park",
+    $createdAt: "1 hour ago",
     likes: 45,
     comments: 23,
     tags: ["earthquake", "bayarea", "aftershocks"],
@@ -149,14 +138,14 @@ const mockForumPosts: ForumPost[] = [
     id: "1",
     author: {
       name: "Emergency Coordinator",
-      avatar: "/event-coordinator.png",
+      userAvatar: "/event-coordinator.png",
       role: "responder",
       reputation: 100,
     },
     title: "Wildfire Season Preparation Checklist",
     content:
       "With fire season approaching, here's a comprehensive checklist to help your family prepare. Please share your own tips and experiences.",
-    timestamp: "2 hours ago",
+    $createdAt: "2 hours ago",
     likes: 67,
     replies: 24,
     category: "preparedness",
@@ -167,14 +156,14 @@ const mockForumPosts: ForumPost[] = [
     id: "2",
     author: {
       name: "Community Volunteer",
-      avatar: "/volunteer-community-garden.png",
+      userAvatar: "/volunteer-community-garden.png",
       role: "community",
       reputation: 85,
     },
     title: "Organizing Neighborhood Emergency Response Team",
     content:
       "Looking to start a CERT team in our area. Who's interested in joining? We can coordinate training and resources together.",
-    timestamp: "4 hours ago",
+    $createdAt: "4 hours ago",
     likes: 32,
     replies: 18,
     category: "general",
@@ -184,14 +173,14 @@ const mockForumPosts: ForumPost[] = [
     id: "3",
     author: {
       name: "Dr. Weather Expert",
-      avatar: "/expert-consultation.png",
+      userAvatar: "/expert-consultation.png",
       role: "expert",
       reputation: 98,
     },
     title: "Understanding Hurricane Categories and Preparation",
     content:
       "Educational post about hurricane classification and what each category means for preparation and evacuation decisions.",
-    timestamp: "6 hours ago",
+    $createdAt: "6 hours ago",
     likes: 89,
     replies: 15,
     category: "preparedness",
@@ -207,11 +196,27 @@ interface NewReport {
   description: string;
 }
 
+const fetchReports = async () => {
+  const databaseId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!;
+  const collectionId = process.env.NEXT_PUBLIC_APPWRITE_POSTS_ID!;
+
+  try {
+    const response = await db.listDocuments(databaseId, collectionId, [
+      Query.orderDesc("$createdAt"), // newest first
+    ]);
+    return response.documents;
+  } catch (error) {
+    console.error("Failed to fetch reports:", error);
+    return [];
+  }
+};
+
 export default function CommunityPage() {
   const { user } = useAuth();
   const [files, setFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [activeTab, setActiveTab] = useState("reports");
+  const [reports, setReports] = useState<any[]>([]);
   const [newReport, setNewReport] = useState({
     title: "",
     description: "",
@@ -221,6 +226,14 @@ export default function CommunityPage() {
   });
   // from your AuthContext
   const [newPost, setNewPost] = useState("");
+
+  useEffect(() => {
+    const getReports = async () => {
+      const docs = await fetchReports();
+      setReports(docs);
+    };
+    getReports();
+  }, []);
 
   const disasterIcons = {
     earthquake: Mountain,
@@ -249,35 +262,33 @@ export default function CommunityPage() {
   };
 
   const handlePostSubmit = async () => {
-  if (!user) return alert("You must be logged in to submit a post.");
-  if (!newPost.trim()) return alert("Post content cannot be empty");
+    if (!user) return alert("You must be logged in to submit a post.");
+    if (!newPost.trim()) return alert("Post content cannot be empty");
 
-  try {
-    const dbId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!;
-    const collectionId = process.env.NEXT_PUBLIC_APPWRITE_POSTS_ID!;
-    await db.createDocument(dbId, collectionId, ID.unique(), {
-      authorId: user.$id,
-      content: newPost.trim(),
-      timestamp: new Date().toISOString(),
-      likes: 0,
-      replies: 0,
-      category: "general",
-    });
+    try {
+      const dbId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!;
+      const collectionId = process.env.NEXT_PUBLIC_APPWRITE_POSTS_ID!;
+      await db.createDocument(dbId, collectionId, ID.unique(), {
+        authorId: user.$id,
+        content: newPost.trim(),
+        $createdAt: new Date().toISOString(),
+        likes: 0,
+        replies: 0,
+        category: "general",
+      });
 
-    setNewPost(""); // clear textarea
-    alert("Post submitted successfully!");
-  } catch (error) {
-    console.error(error);
-    alert("Failed to submit post");
-  }
-};
+      setNewPost(""); // clear textarea
+      alert("Post submitted successfully!");
+    } catch (error) {
+      console.error(error);
+      alert("Failed to submit post");
+    }
+  };
 
-  
   const handleReportSubmit = async () => {
     if (!user) {
       return alert("You must be logged in to submit a report.");
     }
-
 
     const dbId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID;
     const collectionId = process.env.NEXT_PUBLIC_APPWRITE_POSTS_ID; // separate collection for forum posts
@@ -302,17 +313,16 @@ export default function CommunityPage() {
           return await storage.createFile(bucketId, ID.unique(), file);
         })
       );
-      const firstFile = uploadedFiles[0]; // pick the first file
-      const imageURL = storage.getFileView(bucketId, firstFile.$id); // get public URL
+      const imageURL = storage.getFileView(bucketId, uploadedFiles[0].$id);
 
       // 2️⃣ Prepare report data
       const reportData = {
         ...newReport,
         userID: user.$id,
-        
-    
-        imageURL, // single image URL
-        
+        userName: user.name,
+        userAvatar: `/avatars/${user.name.charAt(0).toUpperCase()}.svg`,
+        imageURL: imageURL,
+        files: uploadedFiles.map((f) => f.$id), // store only file IDs
       };
 
       // 3️⃣ Save report to Appwrite Database
@@ -339,6 +349,30 @@ export default function CommunityPage() {
       alert("Failed to submit report");
     }
   };
+  const [reportImages, setReportImages] = useState<{ [key: string]: string }>({});
+
+useEffect(() => {
+  const fetchReportImages = async () => {
+    const bucketId = process.env.NEXT_PUBLIC_APPWRITE_BUCKET_ID!;
+    const images: { [key: string]: string } = {};
+
+    for (const report of reports) {
+      if (report.files && report.files.length > 0) {
+        try {
+          const url = await storage.getFileView(bucketId, report.files[0]);
+          images[report.$id!] = url.toString();
+        } catch (err) {
+          console.error("Failed to fetch file URL:", err);
+          images[report.$id!] = "/placeholder.svg";
+        }
+      }
+    }
+    setReportImages(images);
+  };
+
+  if (reports.length) fetchReportImages();
+}, [reports]);
+  
 
   return (
     <div className="min-h-screen bg-background">
@@ -435,11 +469,14 @@ export default function CommunityPage() {
 
               {/* Reports Grid */}
               <div className="space-y-6">
-                {mockReports.map((report) => {
-                  const Icon = disasterIcons[report.type.toLowerCase() as keyof typeof disasterIcons];
+                {reports.map((report: DisasterReport) => {
+                  const Icon =
+                    disasterIcons[
+                      report.type.toLowerCase() as keyof typeof disasterIcons
+                    ];
                   return (
                     <Card
-                      key={report.id}
+                      key={report.$id}
                       className="bg-card/50 backdrop-blur-sm border-border glow-green-hover"
                     >
                       <CardHeader>
@@ -447,12 +484,12 @@ export default function CommunityPage() {
                           <div className="flex items-start space-x-4">
                             <Avatar className="w-12 h-12">
                               <AvatarImage
-                                src={
-                                  report.reporter.avatar || "/placeholder.svg"
-                                }
+                                src={report.userName || "/placeholder.svg"}
                               />
                               <AvatarFallback>
-                                {report.reporter.name.charAt(0)}
+                                {report.userName
+                                  ? report.userName.charAt(0).toUpperCase()
+                                  : "U"}
                               </AvatarFallback>
                             </Avatar>
                             <div className="flex-1">
@@ -465,15 +502,11 @@ export default function CommunityPage() {
                                 )}
                               </div>
                               <div className="flex items-center space-x-2 text-sm text-muted-foreground mb-2">
-                                <span>{report.reporter.name}</span>
+                                <span>{report.userName}</span>
                                 <span>•</span>
-                                <div className="flex items-center">
-                                  <Star className="w-3 h-3 text-primary mr-1" />
-                                  {report.reporter.reputation}
-                                </div>
-                                <span>•</span>
+
                                 <Clock className="w-3 h-3" />
-                                <span>{report.timestamp}</span>
+                                <span>{new Date(report.$createdAt).toLocaleDateString("en-CA")}</span>
                               </div>
                               <div className="flex items-center space-x-2 mb-3">
                                 <div className="flex items-center space-x-1">
@@ -484,7 +517,11 @@ export default function CommunityPage() {
                                     {report.severity}
                                   </Badge>
                                 </div>
-                                <Badge className={statusColors[report.status]}>
+                                <Badge
+                                  className={
+                                    statusColors[report.status || "unverified"]
+                                  }
+                                >
                                   {report.status}
                                 </Badge>
                                 <div className="flex items-center text-sm text-muted-foreground">
@@ -500,11 +537,11 @@ export default function CommunityPage() {
                         <p className="text-muted-foreground mb-4">
                           {report.description}
                         </p>
-
-                        {report.images && (
+                        
+                        {report.files && report.files.length>0 && (
                           <div className="mb-4">
                             <img
-                              src={report.images[0] || "/placeholder.svg"}
+                              src={storage.getFileView(process.env.NEXT_PUBLIC_APPWRITE_BUCKET_ID!, report.files[0]).toString() || "/placeholder.svg"}
                               alt="Disaster report"
                               className="w-full h-48 object-cover rounded-lg border border-border"
                             />
@@ -512,7 +549,7 @@ export default function CommunityPage() {
                         )}
 
                         <div className="flex flex-wrap gap-2 mb-4">
-                          {report.tags.map((tag, index) => (
+                          {(report.tags ?? []).map((tag, index) => (
                             <Badge
                               key={index}
                               variant="outline"
@@ -532,22 +569,6 @@ export default function CommunityPage() {
                             >
                               <Heart className="w-4 h-4 mr-1" />
                               {report.likes}
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-muted-foreground hover:text-primary"
-                            >
-                              <MessageSquare className="w-4 h-4 mr-1" />
-                              {report.comments}
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-muted-foreground hover:text-primary"
-                            >
-                              <Share2 className="w-4 h-4 mr-1" />
-                              Share
                             </Button>
                           </div>
                           {report.status === "unverified" && (
@@ -601,7 +622,7 @@ export default function CommunityPage() {
                       <div className="flex items-start space-x-4">
                         <Avatar className="w-12 h-12">
                           <AvatarImage
-                            src={post.author.avatar || "/placeholder.svg"}
+                            src={post.author.userAvatar || "/placeholder.svg"}
                           />
                           <AvatarFallback>
                             {post.author.name.charAt(0)}
@@ -618,7 +639,7 @@ export default function CommunityPage() {
                               {post.author.role}
                             </Badge>
                             <span className="text-sm text-muted-foreground">
-                              {post.author.name} • {post.timestamp}
+                              {post.author.name} • {post.$createdAt}
                             </span>
                           </div>
                           <h3 className="text-lg font-semibold text-foreground mb-2">
@@ -773,7 +794,11 @@ export default function CommunityPage() {
                             onChange={(e) =>
                               setNewReport({
                                 ...newReport,
-                                type: e.target.value as   "Wildfire" |"Flood"|"Earthquake"|"Storm",
+                                type: e.target.value as
+                                  | "Wildfire"
+                                  | "Flood"
+                                  | "Earthquake"
+                                  | "Storm",
                               })
                             }
                             className="w-full h-10 px-3 rounded-md border border-border bg-background text-foreground"
