@@ -39,10 +39,11 @@ import {
 import { useAuth } from "@/lib/auth";
 import { db, storage } from "@/lib/appwrite/config";
 import { ID } from "appwrite";
+import { Router } from "next/router";
 
 interface DisasterReport {
   id: string;
-  type: "earthquake" | "flood" | "wildfire" | "storm";
+  type: "Earthquake" | "Flood" | "Wildfire" | "Storm";
   title: string;
   description: string;
   location: string;
@@ -82,7 +83,7 @@ interface ForumPost {
 const mockReports: DisasterReport[] = [
   {
     id: "1",
-    type: "wildfire",
+    type: "Wildfire",
     title: "Smoke Visible from Highway 101",
     description:
       "Large plumes of smoke visible from multiple locations. Fire appears to be spreading rapidly through dry vegetation. Local residents are beginning to evacuate.",
@@ -103,7 +104,7 @@ const mockReports: DisasterReport[] = [
   },
   {
     id: "2",
-    type: "flood",
+    type: "Flood",
     title: "River Overflowing Downtown",
     description:
       "Main Street is completely flooded. Water level rising rapidly. Several cars stranded. Emergency services on scene.",
@@ -123,7 +124,7 @@ const mockReports: DisasterReport[] = [
   },
   {
     id: "3",
-    type: "earthquake",
+    type: "Earthquake",
     title: "Strong Shaking Felt",
     description:
       "Significant earthquake felt across the bay area. Some minor damage to buildings reported. Aftershocks continuing.",
@@ -215,7 +216,7 @@ export default function CommunityPage() {
     title: "",
     description: "",
     location: "",
-    type: "wildfire",
+    type: "Wildfire",
     severity: "medium",
   });
   // from your AuthContext
@@ -247,12 +248,36 @@ export default function CommunityPage() {
     expert: "bg-purple-500/20 text-purple-400 border-purple-500/30",
   };
 
+  const handlePostSubmit = async () => {
+  if (!user) return alert("You must be logged in to submit a post.");
+  if (!newPost.trim()) return alert("Post content cannot be empty");
 
-  const handleSubmit = async () => {
+  try {
+    const dbId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!;
+    const collectionId = process.env.NEXT_PUBLIC_APPWRITE_POSTS_ID!;
+    await db.createDocument(dbId, collectionId, ID.unique(), {
+      authorId: user.$id,
+      content: newPost.trim(),
+      timestamp: new Date().toISOString(),
+      likes: 0,
+      replies: 0,
+      category: "general",
+    });
+
+    setNewPost(""); // clear textarea
+    alert("Post submitted successfully!");
+  } catch (error) {
+    console.error(error);
+    alert("Failed to submit post");
+  }
+};
+
+  
+  const handleReportSubmit = async () => {
     if (!user) {
       return alert("You must be logged in to submit a report.");
     }
-    if (!newPost.trim()) return alert("Post content cannot be empty");
+
 
     const dbId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID;
     const collectionId = process.env.NEXT_PUBLIC_APPWRITE_POSTS_ID; // separate collection for forum posts
@@ -260,26 +285,6 @@ export default function CommunityPage() {
     if (!dbId || !collectionId) {
       return alert("Appwrite environment is not fully configured");
     }
-
-    try {
-      const postData = {
-        authorId: user!.$id,
-        content: newPost.trim(),
-        timestamp: new Date().toISOString(),
-        likes: 0,
-        replies: 0,
-        category: "general", // or add a select field in UI
-      };
-
-      await db.createDocument(dbId, collectionId, ID.unique(), postData);
-
-      setNewPost(""); // reset textarea
-      alert("Post submitted successfully!");
-    } catch (error) {
-      console.error(error);
-      alert("Failed to submit post");
-    }
-  
 
     if (!newReport.title || !newReport.location || !newReport.description) {
       return alert("Please fill in all fields!");
@@ -303,9 +308,11 @@ export default function CommunityPage() {
       // 2️⃣ Prepare report data
       const reportData = {
         ...newReport,
-        userId: user!.$id,
+        userID: user.$id,
+        
+    
         imageURL, // single image URL
-        files: uploadedFiles.map((f) => f.$id), // store Appwrite file IDs
+        
       };
 
       // 3️⃣ Save report to Appwrite Database
@@ -326,6 +333,7 @@ export default function CommunityPage() {
       });
       setFiles([]);
       alert("Report submitted successfully!");
+      setActiveTab("reports");
     } catch (error) {
       console.error(error);
       alert("Failed to submit report");
@@ -428,7 +436,7 @@ export default function CommunityPage() {
               {/* Reports Grid */}
               <div className="space-y-6">
                 {mockReports.map((report) => {
-                  const Icon = disasterIcons[report.type];
+                  const Icon = disasterIcons[report.type.toLowerCase() as keyof typeof disasterIcons];
                   return (
                     <Card
                       key={report.id}
@@ -694,6 +702,7 @@ export default function CommunityPage() {
                           size="sm"
                           className="bg-primary hover:bg-primary/90 glow-green"
                           disabled={!newPost.trim()}
+                          onClick={handlePostSubmit}
                         >
                           <Send className="w-4 h-4 mr-2" />
                           Post
@@ -764,15 +773,15 @@ export default function CommunityPage() {
                             onChange={(e) =>
                               setNewReport({
                                 ...newReport,
-                                type: e.target.value as any,
+                                type: e.target.value as   "Wildfire" |"Flood"|"Earthquake"|"Storm",
                               })
                             }
                             className="w-full h-10 px-3 rounded-md border border-border bg-background text-foreground"
                           >
-                            <option value="wildfire">Wildfire</option>
-                            <option value="flood">Flood</option>
-                            <option value="earthquake">Earthquake</option>
-                            <option value="storm">Storm</option>
+                            <option value="Wildfire">Wildfire</option>
+                            <option value="Flood">Flood</option>
+                            <option value="Earthquake">Earthquake</option>
+                            <option value="Storm">Storm</option>
                           </select>
                         </div>
 
@@ -873,7 +882,7 @@ export default function CommunityPage() {
 
                   <div className="flex justify-end space-x-4">
                     <Button
-                      onClick={handleSubmit}
+                      onClick={handleReportSubmit}
                       className="bg-primary cursor-pointer hover:bg-primary/90 glow-green"
                     >
                       <Send className="w-4 h-4 mr-2" />
