@@ -1,55 +1,67 @@
-"use client"
+"use client";
 
-import type React from "react"
-import { useState } from "react"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { AlertCircle, Eye, EyeOff } from "lucide-react"
-import { useAuth } from "@/lib/auth"
-import { useRouter } from "next/navigation"
+import type React from "react";
+import { useState } from "react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { AlertCircle, Eye, EyeOff, User } from "lucide-react";
+import { useAuth } from "@/lib/auth";
+import { useRouter } from "next/navigation";
+import { account, db } from "@/lib/appwrite/config";
+import { Query } from "appwrite";
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({
     email: "",
     password: "",
-  })
-  const [showPassword, setShowPassword] = useState(false)
-  const [errors, setErrors] = useState<Record<string, string>>({})
-  const { login, isLoading } = useAuth()
-  const router = useRouter()
+  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const { login, isLoading, user } = useAuth();
+  const router = useRouter();
 
   const validateForm = () => {
-    const newErrors: Record<string, string> = {}
+    const newErrors: Record<string, string> = {};
 
-    if (!formData.email.trim()) newErrors.email = "Email is required"
-    else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = "Invalid email format"
-    if (!formData.password) newErrors.password = "Password is required"
+    if (!formData.email.trim()) newErrors.email = "Email is required";
+    else if (!/\S+@\S+\.\S+/.test(formData.email))
+      newErrors.email = "Invalid email format";
+    if (!formData.password) newErrors.password = "Password is required";
 
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!validateForm()) return
+    e.preventDefault();
+    if (!validateForm()) return;
 
-    const role = formData.email.includes("admin") ? "admin" : "user"
-    const success = await login(formData.email, formData.password)
+    const success = await login(formData.email, formData.password);
 
     if (success) {
-      // Redirect based on role
-      if (role === "admin") {
-        router.push("/admin-dashboard")
-      } else {
-        router.push("/user-dashboard")
-      }
+        const currentUser = await account.get();
+        const roleDoc = await db.listDocuments(
+        process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || "database_id",
+        process.env.NEXT_PUBLIC_APPWRITE_USER_ID || "user_collection_id",
+        [Query.equal("accountId", currentUser.$id)] 
+      );
+
+      const role = roleDoc.documents[0]?.role || "user";
+      router.push(role === "admin" ? "/dashboards/admin" : "/dashboards/user");
+
     } else {
-      setErrors({ general: "Invalid credentials" })
+      setErrors({ general: "Invalid credentials" });
     }
-  }
+  };
 
   if (errors.general) {
     return (
@@ -62,7 +74,7 @@ export default function LoginPage() {
           </CardContent>
         </Card>
       </div>
-    )
+    );
   }
 
   return (
@@ -70,8 +82,12 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         <Card className="bg-black border-2 border-primary/20 shadow-[0_0_20px_rgba(34,197,94,0.3)] hover:shadow-[0_0_30px_rgba(34,197,94,0.4)] transition-all duration-300">
           <CardHeader className="text-center">
-            <CardTitle className="text-3xl font-bold text-primary glow-text">Welcome Back</CardTitle>
-            <CardDescription className="text-gray-300">Sign in to your disaster monitoring account</CardDescription>
+            <CardTitle className="text-3xl font-bold text-primary glow-text">
+              Welcome Back
+            </CardTitle>
+            <CardDescription className="text-gray-300">
+              Sign in to your disaster monitoring account
+            </CardDescription>
           </CardHeader>
           <CardContent className="p-6">
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -83,7 +99,9 @@ export default function LoginPage() {
                   id="email"
                   type="email"
                   value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, email: e.target.value })
+                  }
                   className="bg-gray-900 border-gray-700 text-white focus:border-primary focus:ring-primary focus:shadow-[0_0_10px_rgba(34,197,94,0.3)] transition-all duration-300"
                   placeholder="Enter your email"
                 />
@@ -104,7 +122,9 @@ export default function LoginPage() {
                     id="password"
                     type={showPassword ? "text" : "password"}
                     value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, password: e.target.value })
+                    }
                     className="bg-gray-900 border-gray-700 text-white focus:border-primary focus:ring-primary focus:shadow-[0_0_10px_rgba(34,197,94,0.3)] transition-all duration-300 pr-10"
                     placeholder="Enter your password"
                   />
@@ -113,7 +133,11 @@ export default function LoginPage() {
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-primary transition-colors"
                   >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    {showPassword ? (
+                      <EyeOff className="w-4 h-4" />
+                    ) : (
+                      <Eye className="w-4 h-4" />
+                    )}
                   </button>
                 </div>
                 {errors.password && (
@@ -125,7 +149,10 @@ export default function LoginPage() {
               </div>
 
               <div className="flex items-center justify-between">
-                <Link href="/forgot-password" className="text-sm text-primary hover:text-primary/80 transition-colors">
+                <Link
+                  href="/forgot-password"
+                  className="text-sm text-primary hover:text-primary/80 transition-colors"
+                >
                   Forgot Password?
                 </Link>
               </div>
@@ -149,7 +176,10 @@ export default function LoginPage() {
             <div className="mt-6 text-center">
               <p className="text-gray-400">
                 Don't have an account?{" "}
-                <Link href="/Auth/signup" className="text-primary hover:text-primary/80 transition-colors font-medium">
+                <Link
+                  href="/Auth/signup"
+                  className="text-primary hover:text-primary/80 transition-colors font-medium"
+                >
                   Create Account
                 </Link>
               </p>
@@ -158,5 +188,5 @@ export default function LoginPage() {
         </Card>
       </div>
     </div>
-  )
+  );
 }

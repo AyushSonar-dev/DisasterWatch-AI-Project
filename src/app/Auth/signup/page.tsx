@@ -1,7 +1,7 @@
 "use client";
 import type { INewUser, IUser } from "@/types";
 import type React from "react";
-import { useState } from "react";
+import { use, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,6 +28,8 @@ import { createUser } from "@/lib/appwrite/api";
 
 import { account, db } from "@/lib/appwrite/config";
 import { ID, Query } from "appwrite";
+import { Session } from "inspector/promises";
+import toast from "react-hot-toast";
 
 export default function SignUpPage() {
   const [formData, setFormData] = useState({
@@ -70,18 +72,18 @@ export default function SignUpPage() {
       password: formData.password,
     };
 
+
     try {
       // Simulate account creation
 
-      const newAccount = await account.create(
-        ID.unique(),
-        user.email,
-        user.password,
-        user.username
-      );
-      console.log(newAccount);
+      const newAccount = await createUser(user);
+      console.log(newAccount.password);
 
       // Auto-login after signup
+
+
+
+
       await db.createDocument(
         process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || "database_id",
         process.env.NEXT_PUBLIC_APPWRITE_USER_ID || "user_collection_id",
@@ -89,8 +91,9 @@ export default function SignUpPage() {
         {
           accountId: newAccount.$id, // <-- required field
           name: user.username,
+          password: user.password,
           email: user.email,
-          role: formData.role, // store user/admin role
+          role: "user" // store user/admin role
         }
       );
 

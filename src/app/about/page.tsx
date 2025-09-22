@@ -1,3 +1,4 @@
+"use client";
 import { Navigation } from "@/components/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Shield, Users, Globe, Heart, CheckCircle, Star } from "lucide-react"

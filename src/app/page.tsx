@@ -104,7 +104,7 @@ export default function ExplorePage() {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
-              <Link href="/dashboard">
+              <Link href="/public-dashboard">
                 <Button className="bg-primary hover:bg-primary/90 text-black font-semibold px-8 py-4 text-lg shadow-[0_0_20px_rgba(34,197,94,0.4)] hover:shadow-[0_0_30px_rgba(34,197,94,0.6)] transition-all duration-300">
                   <Globe className="w-5 h-5 mr-2" />
                   View Dashboard
@@ -327,13 +327,13 @@ export default function ExplorePage() {
               <div>
                 <h4 className="font-semibold text-white mb-4">Platform</h4>
                 <div className="space-y-2 text-sm">
-                  <Link href="/dashboard" className="block text-gray-400 hover:text-primary transition-colors">
+                  <Link href="/public-dashboard" className="block text-gray-400 hover:text-primary transition-colors">
                     Dashboard
                   </Link>
                   <Link href="/precautions" className="block text-gray-400 hover:text-primary transition-colors">
                     Precautions
                   </Link>
-                  <Link href="/community" className="block text-gray-400 hover:text-primary transition-colors">
+                  <Link href="/dashboards/user/community" className="block text-gray-400 hover:text-primary transition-colors">
                     Community
                   </Link>
                   <Link href="/ai-predictions" className="block text-gray-400 hover:text-primary transition-colors">

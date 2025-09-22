@@ -9,9 +9,9 @@ export function Navigation() {
   const [isOpen, setIsOpen] = useState(false)
 
   const navItems = [
-    { name: "Dashboard", href: "/dashboard", icon: Activity },
+    { name: "Dashboard", href: "/public-dashboard", icon: Activity },
     { name: "Precautions", href: "/precautions", icon: Shield },
-    { name: "Community", href: "/community", icon: Users },
+    { name: "Community", href: "/dashboards/user/community", icon: Users },
     
     { name: "AI Predictions", href: "/ai-predictions", icon: Brain },
    

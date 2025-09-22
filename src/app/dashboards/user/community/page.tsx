@@ -1,14 +1,20 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Navigation } from "@/components/navigation"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { useRef, useState } from "react";
+import { Navigation } from "@/components/navigation";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Users,
   MessageSquare,
@@ -29,45 +35,48 @@ import {
   Camera,
   Shield,
   Star,
-} from "lucide-react"
+} from "lucide-react";
+import { useAuth } from "@/lib/auth";
+import { db, storage } from "@/lib/appwrite/config";
+import { ID } from "appwrite";
 
 interface DisasterReport {
-  id: string
-  type: "earthquake" | "flood" | "wildfire" | "storm"
-  title: string
-  description: string
-  location: string
-  coordinates: [number, number]
-  severity: "low" | "medium" | "high" | "critical"
-  status: "unverified" | "verified" | "investigating"
+  id: string;
+  type: "earthquake" | "flood" | "wildfire" | "storm";
+  title: string;
+  description: string;
+  location: string;
+  coordinates: [number, number];
+  severity: "low" | "medium" | "high" | "critical";
+  status: "unverified" | "verified" | "investigating";
   reporter: {
-    name: string
-    avatar: string
-    reputation: number
-  }
-  timestamp: string
-  likes: number
-  comments: number
-  images?: string[]
-  tags: string[]
+    name: string;
+    avatar: string;
+    reputation: number;
+  };
+  timestamp: string;
+  likes: number;
+  comments: number;
+  images?: string[];
+  tags: string[];
 }
 
 interface ForumPost {
-  id: string
+  id: string;
   author: {
-    name: string
-    avatar: string
-    role: "community" | "responder" | "expert"
-    reputation: number
-  }
-  title: string
-  content: string
-  timestamp: string
-  likes: number
-  replies: number
-  category: "general" | "preparedness" | "recovery" | "resources"
-  tags: string[]
-  isSticky?: boolean
+    name: string;
+    avatar: string;
+    role: "community" | "responder" | "expert";
+    reputation: number;
+  };
+  title: string;
+  content: string;
+  timestamp: string;
+  likes: number;
+  replies: number;
+  category: "general" | "preparedness" | "recovery" | "resources";
+  tags: string[];
+  isSticky?: boolean;
 }
 
 const mockReports: DisasterReport[] = [
@@ -132,7 +141,7 @@ const mockReports: DisasterReport[] = [
     comments: 23,
     tags: ["earthquake", "bayarea", "aftershocks"],
   },
-]
+];
 
 const mockForumPosts: ForumPost[] = [
   {
@@ -187,44 +196,141 @@ const mockForumPosts: ForumPost[] = [
     category: "preparedness",
     tags: ["hurricane", "education", "categories"],
   },
-]
+];
+
+interface NewReport {
+  title: string;
+  location: string;
+  type: "wildfire" | "flood" | "earthquake" | "storm";
+  severity: "low" | "medium" | "high" | "critical";
+  description: string;
+}
 
 export default function CommunityPage() {
-  const [activeTab, setActiveTab] = useState("reports")
+  const { user } = useAuth();
+  const [files, setFiles] = useState<File[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [activeTab, setActiveTab] = useState("reports");
   const [newReport, setNewReport] = useState({
     title: "",
     description: "",
     location: "",
-    type: "wildfire" as const,
-    severity: "medium" as const,
-  })
-  const [newPost, setNewPost] = useState("")
+    type: "wildfire",
+    severity: "medium",
+  });
+  // from your AuthContext
+  const [newPost, setNewPost] = useState("");
 
   const disasterIcons = {
     earthquake: Mountain,
     flood: CloudRain,
     wildfire: Flame,
     storm: Zap,
-  }
+  };
 
   const severityColors = {
     low: "bg-blue-500/20 text-blue-400 border-blue-500/30",
     medium: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
     high: "bg-orange-500/20 text-orange-400 border-orange-500/30",
     critical: "bg-red-500/20 text-red-400 border-red-500/30",
-  }
+  };
 
   const statusColors = {
     unverified: "bg-gray-500/20 text-gray-400 border-gray-500/30",
     investigating: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
     verified: "bg-primary/20 text-primary border-primary/30",
-  }
+  };
 
   const roleColors = {
     community: "bg-blue-500/20 text-blue-400 border-blue-500/30",
     responder: "bg-red-500/20 text-red-400 border-red-500/30",
     expert: "bg-purple-500/20 text-purple-400 border-purple-500/30",
-  }
+  };
+
+
+  const handleSubmit = async () => {
+    if (!user) {
+      return alert("You must be logged in to submit a report.");
+    }
+    if (!newPost.trim()) return alert("Post content cannot be empty");
+
+    const dbId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID;
+    const collectionId = process.env.NEXT_PUBLIC_APPWRITE_POSTS_ID; // separate collection for forum posts
+
+    if (!dbId || !collectionId) {
+      return alert("Appwrite environment is not fully configured");
+    }
+
+    try {
+      const postData = {
+        authorId: user!.$id,
+        content: newPost.trim(),
+        timestamp: new Date().toISOString(),
+        likes: 0,
+        replies: 0,
+        category: "general", // or add a select field in UI
+      };
+
+      await db.createDocument(dbId, collectionId, ID.unique(), postData);
+
+      setNewPost(""); // reset textarea
+      alert("Post submitted successfully!");
+    } catch (error) {
+      console.error(error);
+      alert("Failed to submit post");
+    }
+  
+
+    if (!newReport.title || !newReport.location || !newReport.description) {
+      return alert("Please fill in all fields!");
+    }
+    const bucketId = process.env.NEXT_PUBLIC_APPWRITE_BUCKET_ID;
+    if (!bucketId) return alert("Storage bucket ID is not configured");
+
+    if (!files.length)
+      return alert("Please upload at least one image or video");
+
+    try {
+      // 1️⃣ Upload each file to Appwrite Storage
+      const uploadedFiles = await Promise.all(
+        files.map(async (file) => {
+          return await storage.createFile(bucketId, ID.unique(), file);
+        })
+      );
+      const firstFile = uploadedFiles[0]; // pick the first file
+      const imageURL = storage.getFileView(bucketId, firstFile.$id); // get public URL
+
+      // 2️⃣ Prepare report data
+      const reportData = {
+        ...newReport,
+        userId: user!.$id,
+        imageURL, // single image URL
+        files: uploadedFiles.map((f) => f.$id), // store Appwrite file IDs
+      };
+
+      // 3️⃣ Save report to Appwrite Database
+      await db.createDocument(
+        process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID || "",
+        process.env.NEXT_PUBLIC_APPWRITE_POSTS_ID || "",
+        ID.unique(), // ✅ generates a unique document ID
+        reportData
+      );
+
+      // 4️⃣ Clear form and files
+      setNewReport({
+        title: "",
+        location: "",
+        type: "wildfire",
+        severity: "low",
+        description: "",
+      });
+      setFiles([]);
+      alert("Report submitted successfully!");
+    } catch (error) {
+      console.error(error);
+      alert("Failed to submit report");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -234,9 +340,12 @@ export default function CommunityPage() {
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold text-foreground text-glow-green mb-4">Community Hub</h1>
+            <h1 className="text-4xl font-bold text-foreground text-glow-green mb-4">
+              Community Hub
+            </h1>
             <p className="text-xl text-muted-foreground text-balance max-w-3xl mx-auto">
-              Connect with your community, report disasters, and share resources for collective safety
+              Connect with your community, report disasters, and share resources
+              for collective safety
             </p>
           </div>
 
@@ -248,20 +357,31 @@ export default function CommunityPage() {
               { label: "Verified Reports", value: "89%", icon: CheckCircle },
               { label: "Response Teams", value: "23", icon: Shield },
             ].map((stat, index) => {
-              const Icon = stat.icon
+              const Icon = stat.icon;
               return (
-                <Card key={index} className="bg-card/50 backdrop-blur-sm border-border glow-green-hover">
+                <Card
+                  key={index}
+                  className="bg-card/50 backdrop-blur-sm border-border glow-green-hover"
+                >
                   <CardContent className="p-4 text-center">
                     <Icon className="w-6 h-6 text-primary mx-auto mb-2" />
-                    <div className="text-2xl font-bold text-primary">{stat.value}</div>
-                    <div className="text-sm text-muted-foreground">{stat.label}</div>
+                    <div className="text-2xl font-bold text-primary">
+                      {stat.value}
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      {stat.label}
+                    </div>
                   </CardContent>
                 </Card>
-              )
+              );
             })}
           </div>
 
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <Tabs
+            value={activeTab}
+            onValueChange={setActiveTab}
+            className="space-y-6"
+          >
             <TabsList className="grid w-full grid-cols-3 bg-card/50 border border-border">
               <TabsTrigger
                 value="reports"
@@ -279,7 +399,7 @@ export default function CommunityPage() {
               </TabsTrigger>
               <TabsTrigger
                 value="submit"
-                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                className=" data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Submit Report
@@ -296,7 +416,10 @@ export default function CommunityPage() {
                     className="pl-10 bg-background border-border"
                   />
                 </div>
-                <Button variant="outline" className="border-primary text-primary glow-green-hover bg-transparent">
+                <Button
+                  variant="outline"
+                  className="border-primary text-primary glow-green-hover bg-transparent"
+                >
                   <Filter className="w-4 h-4 mr-2" />
                   Filter
                 </Button>
@@ -305,19 +428,30 @@ export default function CommunityPage() {
               {/* Reports Grid */}
               <div className="space-y-6">
                 {mockReports.map((report) => {
-                  const Icon = disasterIcons[report.type]
+                  const Icon = disasterIcons[report.type];
                   return (
-                    <Card key={report.id} className="bg-card/50 backdrop-blur-sm border-border glow-green-hover">
+                    <Card
+                      key={report.id}
+                      className="bg-card/50 backdrop-blur-sm border-border glow-green-hover"
+                    >
                       <CardHeader>
                         <div className="flex items-start justify-between">
                           <div className="flex items-start space-x-4">
                             <Avatar className="w-12 h-12">
-                              <AvatarImage src={report.reporter.avatar || "/placeholder.svg"} />
-                              <AvatarFallback>{report.reporter.name.charAt(0)}</AvatarFallback>
+                              <AvatarImage
+                                src={
+                                  report.reporter.avatar || "/placeholder.svg"
+                                }
+                              />
+                              <AvatarFallback>
+                                {report.reporter.name.charAt(0)}
+                              </AvatarFallback>
                             </Avatar>
                             <div className="flex-1">
                               <div className="flex items-center space-x-2 mb-1">
-                                <h3 className="font-semibold text-foreground">{report.title}</h3>
+                                <h3 className="font-semibold text-foreground">
+                                  {report.title}
+                                </h3>
                                 {report.status === "verified" && (
                                   <CheckCircle className="w-5 h-5 text-primary glow-green" />
                                 )}
@@ -336,9 +470,15 @@ export default function CommunityPage() {
                               <div className="flex items-center space-x-2 mb-3">
                                 <div className="flex items-center space-x-1">
                                   <Icon className="w-4 h-4 text-primary" />
-                                  <Badge className={severityColors[report.severity]}>{report.severity}</Badge>
+                                  <Badge
+                                    className={severityColors[report.severity]}
+                                  >
+                                    {report.severity}
+                                  </Badge>
                                 </div>
-                                <Badge className={statusColors[report.status]}>{report.status}</Badge>
+                                <Badge className={statusColors[report.status]}>
+                                  {report.status}
+                                </Badge>
                                 <div className="flex items-center text-sm text-muted-foreground">
                                   <MapPin className="w-3 h-3 mr-1" />
                                   {report.location}
@@ -349,7 +489,9 @@ export default function CommunityPage() {
                         </div>
                       </CardHeader>
                       <CardContent>
-                        <p className="text-muted-foreground mb-4">{report.description}</p>
+                        <p className="text-muted-foreground mb-4">
+                          {report.description}
+                        </p>
 
                         {report.images && (
                           <div className="mb-4">
@@ -375,28 +517,43 @@ export default function CommunityPage() {
 
                         <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-4">
-                            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-muted-foreground hover:text-primary"
+                            >
                               <Heart className="w-4 h-4 mr-1" />
                               {report.likes}
                             </Button>
-                            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-muted-foreground hover:text-primary"
+                            >
                               <MessageSquare className="w-4 h-4 mr-1" />
                               {report.comments}
                             </Button>
-                            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-muted-foreground hover:text-primary"
+                            >
                               <Share2 className="w-4 h-4 mr-1" />
                               Share
                             </Button>
                           </div>
                           {report.status === "unverified" && (
-                            <Button size="sm" className="bg-primary hover:bg-primary/90 glow-green">
+                            <Button
+                              size="sm"
+                              className="bg-primary hover:bg-primary/90 glow-green"
+                            >
                               Verify Report
                             </Button>
                           )}
                         </div>
                       </CardContent>
                     </Card>
-                  )
+                  );
                 })}
               </div>
             </TabsContent>
@@ -405,8 +562,14 @@ export default function CommunityPage() {
               {/* Forum Header */}
               <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
                 <div className="flex items-center space-x-4">
-                  <Input placeholder="Search discussions..." className="w-64 bg-background border-border" />
-                  <Button variant="outline" className="border-primary text-primary glow-green-hover bg-transparent">
+                  <Input
+                    placeholder="Search discussions..."
+                    className="w-64 bg-background border-border"
+                  />
+                  <Button
+                    variant="outline"
+                    className="border-primary text-primary glow-green-hover bg-transparent"
+                  >
                     <Filter className="w-4 h-4 mr-2" />
                     Categories
                   </Button>
@@ -429,21 +592,33 @@ export default function CommunityPage() {
                     <CardContent className="p-6">
                       <div className="flex items-start space-x-4">
                         <Avatar className="w-12 h-12">
-                          <AvatarImage src={post.author.avatar || "/placeholder.svg"} />
-                          <AvatarFallback>{post.author.name.charAt(0)}</AvatarFallback>
+                          <AvatarImage
+                            src={post.author.avatar || "/placeholder.svg"}
+                          />
+                          <AvatarFallback>
+                            {post.author.name.charAt(0)}
+                          </AvatarFallback>
                         </Avatar>
                         <div className="flex-1">
                           <div className="flex items-center space-x-2 mb-2">
                             {post.isSticky && (
-                              <Badge className="bg-primary/20 text-primary border-primary/30">Pinned</Badge>
+                              <Badge className="bg-primary/20 text-primary border-primary/30">
+                                Pinned
+                              </Badge>
                             )}
-                            <Badge className={roleColors[post.author.role]}>{post.author.role}</Badge>
+                            <Badge className={roleColors[post.author.role]}>
+                              {post.author.role}
+                            </Badge>
                             <span className="text-sm text-muted-foreground">
                               {post.author.name} • {post.timestamp}
                             </span>
                           </div>
-                          <h3 className="text-lg font-semibold text-foreground mb-2">{post.title}</h3>
-                          <p className="text-muted-foreground mb-3">{post.content}</p>
+                          <h3 className="text-lg font-semibold text-foreground mb-2">
+                            {post.title}
+                          </h3>
+                          <p className="text-muted-foreground mb-3">
+                            {post.content}
+                          </p>
 
                           <div className="flex flex-wrap gap-2 mb-3">
                             {post.tags.map((tag, index) => (
@@ -458,15 +633,27 @@ export default function CommunityPage() {
                           </div>
 
                           <div className="flex items-center space-x-4">
-                            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-muted-foreground hover:text-primary"
+                            >
                               <Heart className="w-4 h-4 mr-1" />
                               {post.likes}
                             </Button>
-                            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-muted-foreground hover:text-primary"
+                            >
                               <MessageSquare className="w-4 h-4 mr-1" />
                               {post.replies} replies
                             </Button>
-                            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-muted-foreground hover:text-primary"
+                            >
                               <Share2 className="w-4 h-4 mr-1" />
                               Share
                             </Button>
@@ -495,7 +682,11 @@ export default function CommunityPage() {
                       />
                       <div className="flex justify-between items-center">
                         <div className="flex space-x-2">
-                          <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-muted-foreground hover:text-primary"
+                          >
                             <Camera className="w-4 h-4" />
                           </Button>
                         </div>
@@ -521,37 +712,61 @@ export default function CommunityPage() {
                     <AlertTriangle className="w-6 h-6 text-primary" />
                     <span>Submit Disaster Report</span>
                   </CardTitle>
-                  <CardDescription>Help your community by reporting disasters and emergency situations</CardDescription>
+                  <CardDescription>
+                    Help your community by reporting disasters and emergency
+                    situations
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="grid md:grid-cols-2 gap-6">
                     <div className="space-y-4">
                       <div>
-                        <label className="text-sm font-medium text-foreground mb-2 block">Report Title</label>
+                        <label className="text-sm font-medium text-foreground mb-2 block">
+                          Report Title
+                        </label>
                         <Input
                           placeholder="Brief description of the situation"
                           value={newReport.title}
-                          onChange={(e) => setNewReport({ ...newReport, title: e.target.value })}
+                          onChange={(e) =>
+                            setNewReport({
+                              ...newReport,
+                              title: e.target.value,
+                            })
+                          }
                           className="bg-background border-border"
                         />
                       </div>
 
                       <div>
-                        <label className="text-sm font-medium text-foreground mb-2 block">Location</label>
+                        <label className="text-sm font-medium text-foreground mb-2 block">
+                          Location
+                        </label>
                         <Input
                           placeholder="City, State or specific address"
                           value={newReport.location}
-                          onChange={(e) => setNewReport({ ...newReport, location: e.target.value })}
+                          onChange={(e) =>
+                            setNewReport({
+                              ...newReport,
+                              location: e.target.value,
+                            })
+                          }
                           className="bg-background border-border"
                         />
                       </div>
 
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <label className="text-sm font-medium text-foreground mb-2 block">Disaster Type</label>
+                          <label className="text-sm font-medium text-foreground mb-2 block">
+                            Disaster Type
+                          </label>
                           <select
                             value={newReport.type}
-                            onChange={(e) => setNewReport({ ...newReport, type: e.target.value as any })}
+                            onChange={(e) =>
+                              setNewReport({
+                                ...newReport,
+                                type: e.target.value as any,
+                              })
+                            }
                             className="w-full h-10 px-3 rounded-md border border-border bg-background text-foreground"
                           >
                             <option value="wildfire">Wildfire</option>
@@ -562,10 +777,17 @@ export default function CommunityPage() {
                         </div>
 
                         <div>
-                          <label className="text-sm font-medium text-foreground mb-2 block">Severity</label>
+                          <label className="text-sm font-medium text-foreground mb-2 block">
+                            Severity
+                          </label>
                           <select
                             value={newReport.severity}
-                            onChange={(e) => setNewReport({ ...newReport, severity: e.target.value as any })}
+                            onChange={(e) =>
+                              setNewReport({
+                                ...newReport,
+                                severity: e.target.value as any,
+                              })
+                            }
                             className="w-full h-10 px-3 rounded-md border border-border bg-background text-foreground"
                           >
                             <option value="low">Low</option>
@@ -579,31 +801,81 @@ export default function CommunityPage() {
 
                     <div className="space-y-4">
                       <div>
-                        <label className="text-sm font-medium text-foreground mb-2 block">Description</label>
+                        <label className="text-sm font-medium text-foreground mb-2 block">
+                          Description
+                        </label>
                         <Textarea
                           placeholder="Detailed description of what you're observing..."
                           value={newReport.description}
-                          onChange={(e) => setNewReport({ ...newReport, description: e.target.value })}
+                          onChange={(e) =>
+                            setNewReport({
+                              ...newReport,
+                              description: e.target.value,
+                            })
+                          }
                           className="bg-background border-border resize-none"
                           rows={6}
                         />
                       </div>
 
-                      <div>
-                        <label className="text-sm font-medium text-foreground mb-2 block">Photos/Videos</label>
-                        <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
-                          <Camera className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-                          <p className="text-sm text-muted-foreground">Drag and drop files here or click to upload</p>
-                        </div>
+                      <div
+                        className="border-2 border-dashed border-border rounded-lg p-6 text-center cursor-pointer"
+                        onClick={() => fileInputRef.current?.click()}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          setFiles([
+                            ...files,
+                            ...Array.from(e.dataTransfer.files),
+                          ]);
+                        }}
+                        onDragOver={(e) => e.preventDefault()}
+                      >
+                        <Camera className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                        <p className="text-sm text-muted-foreground">
+                          Drag and drop files here or click to upload
+                        </p>
+
+                        {/* Hidden file input */}
+                        <input
+                          type="file"
+                          multiple
+                          accept="image/*,video/*"
+                          ref={fileInputRef}
+                          className="hidden"
+                          onChange={(e) => {
+                            if (!e.target.files) return;
+                            setFiles([...files, ...Array.from(e.target.files)]);
+                          }}
+                        />
+                      </div>
+                      <div className="flex space-x-2 mt-2">
+                        {files.map((file, idx) => (
+                          <div
+                            key={idx}
+                            className="w-20 h-20 border rounded overflow-hidden"
+                          >
+                            {file.type.startsWith("image") ? (
+                              <img
+                                src={URL.createObjectURL(file)}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <video
+                                src={URL.createObjectURL(file)}
+                                className="w-full h-full object-cover"
+                              />
+                            )}
+                          </div>
+                        ))}
                       </div>
                     </div>
                   </div>
 
                   <div className="flex justify-end space-x-4">
-                    <Button variant="outline" className="border-primary text-primary glow-green-hover bg-transparent">
-                      Save Draft
-                    </Button>
-                    <Button className="bg-primary hover:bg-primary/90 glow-green">
+                    <Button
+                      onClick={handleSubmit}
+                      className="bg-primary cursor-pointer hover:bg-primary/90 glow-green"
+                    >
                       <Send className="w-4 h-4 mr-2" />
                       Submit Report
                     </Button>
@@ -614,7 +886,9 @@ export default function CommunityPage() {
               {/* Reporting Guidelines */}
               <Card className="bg-card/50 backdrop-blur-sm border-border">
                 <CardHeader>
-                  <CardTitle className="text-foreground">Reporting Guidelines</CardTitle>
+                  <CardTitle className="text-foreground">
+                    Reporting Guidelines
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="grid md:grid-cols-2 gap-6">
@@ -652,5 +926,5 @@ export default function CommunityPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }

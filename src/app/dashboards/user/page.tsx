@@ -127,7 +127,7 @@ function Navigation() {
   const navItems = [
     { name: "Dashboard", href: "/user-dashboard", icon: Activity },
     { name: "Precautions", href: "/precautions", icon: Shield },
-    { name: "Community", href: "/community", icon: Users },
+    { name: "Community", href: "/dashboards/user/community", icon: Users },
 
     { name: "AI Predictions", href: "/ai-predictions", icon: Brain },
 

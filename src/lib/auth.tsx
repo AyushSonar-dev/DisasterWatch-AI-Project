@@ -1,8 +1,15 @@
 "use client";
 
 import type React from "react";
-import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
-import { account } from "@/lib/appwrite/config"; // <-- import Appwrite client
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  type ReactNode,
+} from "react";
+import { account, db } from "@/lib/appwrite/config"; // <-- import Appwrite client
+import { Query } from "appwrite";
 
 interface User {
   $id: string;
@@ -46,6 +53,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await account.createEmailSession(email, password);
       const currentUser = await account.get();
       setUser(currentUser as User);
+      // 3. Fetch role from your secure DB (user collection)
+      const roleDoc = await db.listDocuments(
+        process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!,
+        process.env.NEXT_PUBLIC_APPWRITE_USER_ID!,
+        [Query.equal("accountId", currentUser.$id)]
+      );
+
+      const role = roleDoc.documents[0]?.role || "user"; // fallback to user
+
+      setUser({ ...currentUser, role }); // attach role but cannot be modified by client
+      setIsLoading(false);
+
       setIsLoading(false);
       return true;
     } catch (error) {
@@ -102,7 +121,8 @@ export function withAuth<P extends object>(
     }
 
     if (requiredRole && user.role !== requiredRole) {
-      if (typeof window !== "undefined") window.location.href = "/access-denied";
+      if (typeof window !== "undefined")
+        window.location.href = "/access-denied";
       return null;
     }
 
