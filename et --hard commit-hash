@@ -1,0 +1,10 @@
+[33m7b027f5[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m Integrated  maps using leaflet
+[33md3fd794[m navigation component modified for dynamic user sessions
+[33m1981b7c[m[33m ([m[1;31morigin/main[m[33m)[m integrated dynamic post section
+[33me2bd993[m Report disaster Post section connected to DB
+[33m991da11[m created sessions for signin and signout
+[33m5903bc1[m Auth with backend
+[33m914bab1[m page routes modified
+[33mc33c3ce[m  created front-end pages
+[33m6b421d2[m project setup and dependensies
+[33mfd40ee9[m Initial commit from Create Next App

@@ -233,7 +233,8 @@ function Navigation() {
 
 export default function UserDashboard() {
   const [selectedDisaster, setSelectedDisaster] = useState<string | null>(null);
-  //const [Mockdisasters, setDisasters] = useState<Disaster[]>([]);
+  
+  
   const [alerts, setAlerts] = useState<DisasterAlert[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -243,7 +244,7 @@ export default function UserDashboard() {
     wildfire: Flame,
     storm: Zap,
   };
-  useEffect(() => {
+  /*useEffect(() => {
   const fetchDisasters = async () => {
     try {
       const res = await fetch(
@@ -267,6 +268,7 @@ export default function UserDashboard() {
         lastUpdate: new Date(d.updatedate).toLocaleString(),
         description: d.title,
       }));
+      
 
       
 
@@ -290,6 +292,7 @@ export default function UserDashboard() {
 
   fetchDisasters();
 }, []);
+*/
 
   const severityColors = {
     low: "bg-blue-500/20 text-blue-400 border-blue-500/30",
