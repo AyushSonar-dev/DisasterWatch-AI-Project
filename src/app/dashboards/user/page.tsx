@@ -1,12 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
+import Link from "next/link";
 
-
-import Link from "next/link"
-
-import { Menu, X,  Info, Database, Brain } from "lucide-react"
+import { Menu, X, Info, Database, Brain } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -36,6 +34,7 @@ import {
   Eye,
 } from "lucide-react";
 import { account } from "@/lib/appwrite/config";
+import DisasterMap from "@/components/DisasterMap";
 
 interface Disaster {
   id: string;
@@ -57,15 +56,15 @@ interface DisasterAlert {
   timestamp: string;
   location: string;
 }
-const logouthandler=async()=>{
+const logouthandler = async () => {
   try {
     await account.deleteSession("current");
     window.location.href = "/"; // Redirect to login page
   } catch (err) {
     console.error("Logout failed:", err);
-  } 
-}
-const mockDisasters: Disaster[] = [
+  }
+};
+const Mockdisasters: Disaster[] = [
   {
     id: "1",
     type: "earthquake",
@@ -125,7 +124,7 @@ function Navigation() {
   const [isOpen, setIsOpen] = useState(false);
 
   const navItems = [
-    { name: "Dashboard", href: "/user-dashboard", icon: Activity },
+    { name: "Dashboard", href: "/dashboards/user", icon: Activity },
     { name: "Precautions", href: "/precautions", icon: Shield },
     { name: "Community", href: "/dashboards/user/community", icon: Users },
 
@@ -169,7 +168,7 @@ function Navigation() {
 
           {/* CTA Buttons */}
           <div className="hidden md:flex items-center space-x-4">
-            <Link  onClick={logouthandler} href="/Auth/login">
+            <Link onClick={logouthandler} href="/Auth/login">
               <Button className="bg-primary hover:bg-primary/90 text-primary-foreground glow-green">
                 logout
               </Button>
@@ -234,6 +233,9 @@ function Navigation() {
 
 export default function UserDashboard() {
   const [selectedDisaster, setSelectedDisaster] = useState<string | null>(null);
+  //const [Mockdisasters, setDisasters] = useState<Disaster[]>([]);
+  const [alerts, setAlerts] = useState<DisasterAlert[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const disasterIcons = {
     earthquake: Mountain,
@@ -241,6 +243,53 @@ export default function UserDashboard() {
     wildfire: Flame,
     storm: Zap,
   };
+  useEffect(() => {
+  const fetchDisasters = async () => {
+    try {
+      const res = await fetch(
+        "https://www.gdacs.org/gdacsapi/api/events/geteventlist"
+      );
+      const data = await res.json();
+
+      const parsed: Disaster[] = data.events.map((d: any) => ({
+        id: d.eventid.toString(),
+        type: d.eventtype.toLowerCase() as Disaster["type"],
+        location: d.country || d.title,
+        coordinates: [d.lat, d.long],
+        severity:
+          d.alertlevel === "Green"
+            ? "low"
+            : d.alertlevel === "Orange"
+            ? "high"
+            : "critical",
+        status: d.closedate ? "resolved" : "active",
+        affectedPeople: d.population || 0,
+        lastUpdate: new Date(d.updatedate).toLocaleString(),
+        description: d.title,
+      }));
+
+      
+
+      // Mock alerts until you wire another API
+      setAlerts([
+        {
+          id: "1",
+          type: "emergency",
+          title: "Sample Alert",
+          message: "Stay safe! Disaster ongoing.",
+          timestamp: new Date().toLocaleString(),
+          location: "Global",
+        },
+      ]);
+    } catch (err) {
+      console.error("Error fetching Mockdisasters:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchDisasters();
+}, []);
 
   const severityColors = {
     low: "bg-blue-500/20 text-blue-400 border-blue-500/30",
@@ -258,13 +307,13 @@ export default function UserDashboard() {
   const stats = [
     {
       label: "Active Disasters",
-      value: mockDisasters.filter((d) => d.status === "active").length,
+      value: Mockdisasters.filter((d) => d.status === "active").length,
       icon: AlertTriangle,
       color: "text-red-400",
     },
     {
       label: "People Affected",
-      value: mockDisasters
+      value: Mockdisasters
         .reduce((sum, d) => sum + d.affectedPeople, 0)
         .toLocaleString(),
       icon: Users,
@@ -297,7 +346,7 @@ export default function UserDashboard() {
                 User Dashboard
               </h1>
               <p className="text-gray-300">
-                Monitor disasters, stay informed, and contribute to community
+                Monitor Mockdisasters, stay informed, and contribute to community
                 safety
               </p>
             </div>
@@ -395,10 +444,10 @@ export default function UserDashboard() {
                 <CardContent>
                   <div className="relative h-96 bg-gradient-to-br from-gray-900 to-black rounded-lg border border-primary/20 overflow-hidden">
                     {/* Simulated World Map */}
-                    <div className="absolute inset-0 bg-[url('/dark-world-map.png')] bg-cover bg-center opacity-30"></div>
+                   <DisasterMap disasters={Mockdisasters} />
 
                     {/* Disaster Hotspots */}
-                    {mockDisasters.map((disaster) => (
+                    {Mockdisasters.map((disaster) => (
                       <div
                         key={disaster.id}
                         className="absolute w-4 h-4 rounded-full animate-pulse cursor-pointer shadow-[0_0_15px_rgba(34,197,94,0.6)]"
@@ -532,7 +581,7 @@ export default function UserDashboard() {
             <Card className="bg-black border-2 border-primary/20 shadow-[0_0_20px_rgba(34,197,94,0.3)] hover:shadow-[0_0_30px_rgba(34,197,94,0.4)] transition-all duration-300">
               <CardHeader>
                 <CardTitle className="text-primary glow-text">
-                  Recent Disasters ({mockDisasters.length})
+                  Recent Disasters ({Mockdisasters.length})
                 </CardTitle>
                 <CardDescription className="text-gray-300">
                   Stay informed about current disaster situations
@@ -540,7 +589,7 @@ export default function UserDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {mockDisasters.map((disaster) => {
+                  {Mockdisasters.map((disaster) => {
                     const Icon = disasterIcons[disaster.type];
                     return (
                       <div
