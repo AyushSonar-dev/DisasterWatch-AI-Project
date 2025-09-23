@@ -4,12 +4,17 @@ import { useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Menu, X, Shield, Activity, Users, Info, Database, Brain } from "lucide-react"
+import { useAuth } from "@/lib/auth"
+
+
 
 export function Navigation() {
   const [isOpen, setIsOpen] = useState(false)
+  const { user, logout, isLoading,role} = useAuth();
+
 
   const navItems = [
-    { name: "Dashboard", href: "/public-dashboard", icon: Activity },
+    { name: "Dashboard", href: role === "admin" ? "/dashboards/admin" : "/dashboards/user", icon: Activity },
     { name: "Precautions", href: "/precautions", icon: Shield },
     { name: "Community", href: "/dashboards/user/community", icon: Users },
     
@@ -51,13 +56,29 @@ export function Navigation() {
 
           {/* CTA Buttons */}
           <div className="hidden md:flex items-center space-x-4">
+            
 
-              
-            <Link href="/Auth/login">
-            <Button className="bg-primary hover:bg-primary/90 text-primary-foreground glow-green">
-              Sigin
-            </Button>
-            </Link>
+             {!isLoading && (
+              <div>
+                {user ? (
+                  // ✅ If logged in → show Signout button
+                  <Button
+                    onClick={logout}
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground glow-green"
+                  >
+                    Sign out
+                  </Button>
+                ) : (
+                  // ❌ If not logged in → show Login link
+                  <Link href="/Auth/login">
+                    <Button className="bg-primary hover:bg-primary/90 text-primary-foreground glow-green">
+                      Sigin
+                    </Button>
+                  </Link>
+                )}
+              </div>
+            )}  
+           
           </div>
 
           {/* Mobile menu button */}

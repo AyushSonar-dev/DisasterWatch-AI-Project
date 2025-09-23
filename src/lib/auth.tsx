@@ -20,6 +20,7 @@ interface User {
 
 interface AuthContextType {
   user: User | null;
+  role: "admin" | "user" | null;
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
   isLoading: boolean;
@@ -30,6 +31,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [role, setRole] = useState<"admin" | "user" | null>(null);
 
   // 🔹 Check session on mount
   useEffect(() => {
@@ -60,9 +62,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         [Query.equal("accountId", currentUser.$id)]
       );
 
-      const role = roleDoc.documents[0]?.role || "user"; // fallback to user
+     const fetchedRole = roleDoc.documents[0]?.role || "user";
 
-      setUser({ ...currentUser, role }); // attach role but cannot be modified by client
+      setUser({ ...currentUser, role:fetchedRole }); // attach role but cannot be modified by client
+      setRole(fetchedRole);
       setIsLoading(false);
 
       setIsLoading(false);
@@ -85,7 +88,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isLoading }}>
+    <AuthContext.Provider value={{ role,user, login, logout, isLoading }}>
       {children}
     </AuthContext.Provider>
   );
