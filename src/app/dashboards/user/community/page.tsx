@@ -539,8 +539,8 @@ useEffect(() => {
                         </p>
                         
                         {report.files && report.files.length>0 && (
-                          <div className="mb-4">
-                            <img
+                          <div className="mb-4 w-full h-full">
+                            <img 
                               src={storage.getFileView(process.env.NEXT_PUBLIC_APPWRITE_BUCKET_ID!, report.files[0]).toString() || "/placeholder.svg"}
                               alt="Disaster report"
                               className="w-full h-48 object-cover rounded-lg border border-border"

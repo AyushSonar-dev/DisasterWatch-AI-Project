@@ -19,7 +19,7 @@ interface Disaster {
   status: "active" | "monitoring" | "resolved";
   affectedPeople: number;
   lastUpdate: string;
-  description: string;
+  description?: string;
 }
 
 interface DisasterMapProps {

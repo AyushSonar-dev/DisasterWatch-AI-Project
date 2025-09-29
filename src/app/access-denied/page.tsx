@@ -1,9 +1,15 @@
-"use client"
+"use client";
 
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Shield, ArrowLeft, AlertTriangle } from "lucide-react"
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Shield, ArrowLeft, AlertTriangle } from "lucide-react";
 
 export default function AccessDeniedPage() {
   return (
@@ -14,15 +20,20 @@ export default function AccessDeniedPage() {
             <div className="mx-auto w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mb-4">
               <Shield className="w-8 h-8 text-red-400" />
             </div>
-            <CardTitle className="text-2xl font-bold text-red-400 glow-text">Access Denied</CardTitle>
-            <CardDescription className="text-gray-300">Admins Only - Insufficient Permissions</CardDescription>
+            <CardTitle className="text-2xl font-bold text-red-400 glow-text">
+              Access Denied
+            </CardTitle>
+            <CardDescription className="text-gray-300">
+              Admins Only - Insufficient Permissions
+            </CardDescription>
           </CardHeader>
           <CardContent className="text-center space-y-6">
             <div className="p-4 bg-red-500/10 rounded-lg border border-red-500/20">
               <AlertTriangle className="w-6 h-6 text-red-400 mx-auto mb-2" />
               <p className="text-gray-300 text-sm">
-                You don't have the required administrator privileges to access this area. Contact your system
-                administrator if you believe this is an error.
+                You don't have the required administrator privileges to access
+                this area. Contact your system administrator if you believe this
+                is an error.
               </p>
             </div>
 
@@ -47,7 +58,10 @@ export default function AccessDeniedPage() {
             <div className="pt-4 border-t border-gray-800">
               <p className="text-xs text-gray-500">
                 Need admin access? Contact your system administrator or
-                <Link href="/community" className="text-primary hover:text-primary/80 ml-1">
+                <Link
+                  href="/community"
+                  className="text-primary hover:text-primary/80 ml-1"
+                >
                   report an issue
                 </Link>
               </p>
@@ -56,5 +70,5 @@ export default function AccessDeniedPage() {
         </Card>
       </div>
     </div>
-  )
+  );
 }

@@ -34,10 +34,14 @@ import {
   Eye,
 } from "lucide-react";
 import { account } from "@/lib/appwrite/config";
-import DisasterMap from "@/components/DisasterMap";
+import dynamic from "next/dynamic";
+const DisasterMap = dynamic(() => import("@/components/DisasterMap"), {
+  ssr: false,
+});
 
 interface Disaster {
   id: string;
+  
   type: "earthquake" | "flood" | "wildfire" | "storm";
   location: string;
   coordinates: [number, number];
@@ -45,7 +49,9 @@ interface Disaster {
   status: "active" | "monitoring" | "resolved";
   affectedPeople: number;
   lastUpdate: string;
-  description: string;
+  date: string; 
+  closed?: string | null;
+  description?: string;
 }
 
 interface DisasterAlert {
@@ -64,41 +70,7 @@ const logouthandler = async () => {
     console.error("Logout failed:", err);
   }
 };
-const Mockdisasters: Disaster[] = [
-  {
-    id: "1",
-    type: "earthquake",
-    location: "Tokyo, Japan",
-    coordinates: [35.6762, 139.6503],
-    severity: "high",
-    status: "active",
-    affectedPeople: 50000,
-    lastUpdate: "2 minutes ago",
-    description: "7.2 magnitude earthquake detected in metropolitan area",
-  },
-  {
-    id: "2",
-    type: "wildfire",
-    location: "California, USA",
-    coordinates: [36.7783, -119.4179],
-    severity: "critical",
-    status: "active",
-    affectedPeople: 25000,
-    lastUpdate: "5 minutes ago",
-    description: "Rapidly spreading wildfire threatening residential areas",
-  },
-  {
-    id: "3",
-    type: "flood",
-    location: "Bangladesh",
-    coordinates: [23.685, 90.3563],
-    severity: "medium",
-    status: "monitoring",
-    affectedPeople: 100000,
-    lastUpdate: "15 minutes ago",
-    description: "Monsoon flooding affecting multiple districts",
-  },
-];
+
 
 const mockAlerts: DisasterAlert[] = [
   {
@@ -233,6 +205,7 @@ function Navigation() {
 
 export default function UserDashboard() {
   const [selectedDisaster, setSelectedDisaster] = useState<string | null>(null);
+  const [disasters, setDisasters] = useState<Disaster[]>([]);
   
   
   const [alerts, setAlerts] = useState<DisasterAlert[]>([]);
@@ -244,55 +217,141 @@ export default function UserDashboard() {
     wildfire: Flame,
     storm: Zap,
   };
-  /*useEffect(() => {
-  const fetchDisasters = async () => {
-    try {
-      const res = await fetch(
-        "https://www.gdacs.org/gdacsapi/api/events/geteventlist"
-      );
-      const data = await res.json();
-
-      const parsed: Disaster[] = data.events.map((d: any) => ({
-        id: d.eventid.toString(),
-        type: d.eventtype.toLowerCase() as Disaster["type"],
-        location: d.country || d.title,
-        coordinates: [d.lat, d.long],
-        severity:
-          d.alertlevel === "Green"
-            ? "low"
-            : d.alertlevel === "Orange"
-            ? "high"
-            : "critical",
-        status: d.closedate ? "resolved" : "active",
-        affectedPeople: d.population || 0,
-        lastUpdate: new Date(d.updatedate).toLocaleString(),
-        description: d.title,
-      }));
-      
-
-      
-
-      // Mock alerts until you wire another API
-      setAlerts([
-        {
-          id: "1",
-          type: "emergency",
-          title: "Sample Alert",
-          message: "Stay safe! Disaster ongoing.",
-          timestamp: new Date().toLocaleString(),
-          location: "Global",
-        },
-      ]);
-    } catch (err) {
-      console.error("Error fetching Mockdisasters:", err);
-    } finally {
-      setLoading(false);
-    }
+  
+  const isInIndia = (lat: number, lon: number): boolean => {
+    // Approximate bounding box for India mainland and nearby territories
+    // Latitude: ~6 to ~37, Longitude: ~68 to ~98
+    return lat >= 6 && lat <= 37 && lon >= 68 && lon <= 98;
   };
+  useEffect(() => {
+    const mapCategoryToType = (title: string): Disaster["type"] | null => {
+      const t = title.toLowerCase();
+      if (t === "wildfires") return "wildfire";
+      if (t === "severe storms") return "storm";
+      if (t === "earthquakes") return "earthquake";
+      if (t === "floods") return "flood";
+      return null;
+    };
 
-  fetchDisasters();
-}, []);
-*/
+    const cleanLocationFromTitle = (title: string, mappedType: Disaster["type"], lat: number, lon: number): string => {
+      let text = title || "";
+      // Prefer the part after the last ' - '
+      if (text.includes(" - ")) {
+        const parts = text.split(" - ");
+        text = parts[parts.length - 1];
+      }
+      // Prefer the part after the last ' in '
+      if (/\bin\b/i.test(text)) {
+        const idx = text.toLowerCase().lastIndexOf(" in ");
+        if (idx !== -1) {
+          text = text.slice(idx + 4);
+        }
+      }
+      // Remove category words and generic tokens
+      const categoryPatterns: Record<Disaster["type"], RegExp> = {
+        wildfire: /\b(wildfire|wildfires)\b/gi,
+        storm: /\b(severe\s*storm|severe\s*storms|storm|storms)\b/gi,
+        earthquake: /\b(earthquake|earthquakes)\b/gi,
+        flood: /\b(flood|floods|flooding)\b/gi,
+      };
+      text = text.replace(categoryPatterns[mappedType], "");
+      text = text.replace(/\b(event|alert|hazard)\b/gi, "");
+      // Remove standalone numbers
+      text = text.replace(/\b\d+\b/g, "");
+      // Cleanup punctuation/extra whitespace
+      text = text.replace(/[\-–—_,]+/g, " ").replace(/\s+/g, " ").trim();
+      // Remove trailing 'in' if left hanging
+      text = text.replace(/\bin\s*$/i, "").trim();
+      if (!text) {
+        text = "Unknown";
+      }
+      if (isInIndia(lat, lon) && !/\bindia\b/i.test(text)) {
+        text = `${text}, India`;
+      }
+      return text;
+    };
+
+    const fetchDisasters = async () => {
+      try {
+        // Fetch open events from NASA EONET v3
+        const res = await fetch(
+          "https://eonet.gsfc.nasa.gov/api/v3/events?status=open"
+        );
+        const data = await res.json();
+
+        const parsed: Disaster[] = (data.events || [])
+          .map((ev: any) => {
+            const primaryCategory = ev.categories && ev.categories[0];
+            const mappedType = primaryCategory
+              ? mapCategoryToType(primaryCategory.title)
+              : null;
+            if (!mappedType) return null; // ignore unsupported categories
+
+            // Use the latest geometry; EONET coords are [lon, lat]
+            const latestGeometry = ev.geometries && ev.geometries.length
+              ? ev.geometries[ev.geometries.length - 1]
+              : null;
+            const coords = latestGeometry?.coordinates || [0, 0];
+            const lon = Array.isArray(coords) ? coords[0] : 0;
+            const lat = Array.isArray(coords) ? coords[1] : 0;
+
+            const eventDate = latestGeometry?.date || ev.geometry?.date || ev.closed || ev.open || new Date().toISOString();
+
+            // Heuristic severity by type
+            const severity: Disaster["severity"] =
+              mappedType === "earthquake"
+                ? "critical"
+                : mappedType === "wildfire"
+                ? "high"
+                : mappedType === "storm"
+                ? "high"
+                : "medium";
+
+            const niceLocation = cleanLocationFromTitle(ev.title || "", mappedType, lat, lon);
+
+            return {
+              id: String(ev.id ?? ev.title),
+              type: mappedType,
+              location: niceLocation,
+              coordinates: [lat, lon],
+              severity,
+              status: "active",
+              affectedPeople: 0,
+              lastUpdate: new Date(eventDate).toLocaleString(),
+              date: eventDate,
+              closed: null,
+              description: ev.title,
+            } as Disaster;
+          })
+          .filter(Boolean);
+        
+        // Filter for India region using coordinates or location text
+        const latestTen = (parsed as Disaster[])
+          .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+          .slice(0, 10);
+
+        setDisasters(latestTen);
+
+        // Temporary sample alert (can be replaced later)
+        setAlerts([
+          {
+            id: "1",
+            type: "emergency",
+            title: "Live Data Active",
+            message: "Disasters are loaded from NASA EONET (open events).",
+            timestamp: new Date().toLocaleString(),
+            location: "Global",
+          },
+        ]);
+      } catch (err) {
+        console.error("Error fetching EONET disasters:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDisasters();
+  }, []);
 
   const severityColors = {
     low: "bg-blue-500/20 text-blue-400 border-blue-500/30",
@@ -310,13 +369,13 @@ export default function UserDashboard() {
   const stats = [
     {
       label: "Active Disasters",
-      value: Mockdisasters.filter((d) => d.status === "active").length,
+      value: disasters.filter((d) => d.status === "active").length,
       icon: AlertTriangle,
       color: "text-red-400",
     },
     {
       label: "People Affected",
-      value: Mockdisasters
+      value: disasters
         .reduce((sum, d) => sum + d.affectedPeople, 0)
         .toLocaleString(),
       icon: Users,
@@ -349,7 +408,7 @@ export default function UserDashboard() {
                 User Dashboard
               </h1>
               <p className="text-gray-300">
-                Monitor Mockdisasters, stay informed, and contribute to community
+                Monitor disasters, stay informed, and contribute to community
                 safety
               </p>
             </div>
@@ -447,10 +506,10 @@ export default function UserDashboard() {
                 <CardContent>
                   <div className="relative h-96 bg-gradient-to-br from-gray-900 to-black rounded-lg border border-primary/20 overflow-hidden">
                     {/* Simulated World Map */}
-                   <DisasterMap disasters={Mockdisasters} />
+                   <DisasterMap disasters={disasters} />
 
                     {/* Disaster Hotspots */}
-                    {Mockdisasters.map((disaster) => (
+                    {disasters.map((disaster) => (
                       <div
                         key={disaster.id}
                         className="absolute w-4 h-4 rounded-full animate-pulse cursor-pointer shadow-[0_0_15px_rgba(34,197,94,0.6)]"
@@ -584,7 +643,7 @@ export default function UserDashboard() {
             <Card className="bg-black border-2 border-primary/20 shadow-[0_0_20px_rgba(34,197,94,0.3)] hover:shadow-[0_0_30px_rgba(34,197,94,0.4)] transition-all duration-300">
               <CardHeader>
                 <CardTitle className="text-primary glow-text">
-                  Recent Disasters ({Mockdisasters.length})
+                  Recent Disasters ({disasters.length})
                 </CardTitle>
                 <CardDescription className="text-gray-300">
                   Stay informed about current disaster situations
@@ -592,7 +651,7 @@ export default function UserDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {Mockdisasters.map((disaster) => {
+                  {disasters.map((disaster) => {
                     const Icon = disasterIcons[disaster.type];
                     return (
                       <div

@@ -72,7 +72,7 @@ export function Navigation() {
                   // ❌ If not logged in → show Login link
                   <Link href="/Auth/login">
                     <Button className="bg-primary hover:bg-primary/90 text-primary-foreground glow-green">
-                      Sigin
+                      Sign in
                     </Button>
                   </Link>
                 )}

@@ -1,11 +1,17 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Navigation } from "@/components/navigation"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useState } from "react";
+import { Navigation } from "@/components/navigation";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Shield,
   Brain,
@@ -24,27 +30,27 @@ import {
   Car,
   Smartphone,
   Radio,
-} from "lucide-react"
+} from "lucide-react";
 
 interface SafetyGuide {
-  id: string
-  type: "earthquake" | "flood" | "wildfire" | "storm"
-  title: string
-  description: string
-  priority: "high" | "medium" | "low"
-  steps: string[]
-  supplies: string[]
-  timeframe: string
+  id: string;
+  type: "earthquake" | "flood" | "wildfire" | "storm";
+  title: string;
+  description: string;
+  priority: "high" | "medium" | "low";
+  steps: string[];
+  supplies: string[];
+  timeframe: string;
 }
 
 interface AISuggestion {
-  id: string
-  type: "prediction" | "preparation" | "response"
-  title: string
-  description: string
-  confidence: number
-  urgency: "immediate" | "soon" | "monitor"
-  location?: string
+  id: string;
+  type: "prediction" | "preparation" | "response";
+  title: string;
+  description: string;
+  confidence: number;
+  urgency: "immediate" | "soon" | "monitor";
+  location?: string;
 }
 
 const safetyGuides: SafetyGuide[] = [
@@ -52,7 +58,8 @@ const safetyGuides: SafetyGuide[] = [
     id: "1",
     type: "earthquake",
     title: "Earthquake Preparedness",
-    description: "Essential steps to protect yourself and your family during seismic events",
+    description:
+      "Essential steps to protect yourself and your family during seismic events",
     priority: "high",
     timeframe: "Before, During & After",
     steps: [
@@ -76,7 +83,8 @@ const safetyGuides: SafetyGuide[] = [
     id: "2",
     type: "wildfire",
     title: "Wildfire Safety Protocol",
-    description: "Critical actions for wildfire threats and evacuation procedures",
+    description:
+      "Critical actions for wildfire threats and evacuation procedures",
     priority: "high",
     timeframe: "Immediate Action Required",
     steps: [
@@ -100,7 +108,8 @@ const safetyGuides: SafetyGuide[] = [
     id: "3",
     type: "flood",
     title: "Flood Response Guide",
-    description: "Water safety measures and evacuation protocols for flooding events",
+    description:
+      "Water safety measures and evacuation protocols for flooding events",
     priority: "medium",
     timeframe: "Seasonal Preparation",
     steps: [
@@ -135,16 +144,24 @@ const safetyGuides: SafetyGuide[] = [
       "Stay indoors during the storm",
       "Avoid using electrical appliances",
     ],
-    supplies: ["Plywood and nails", "Tarps", "Generator (if safe)", "Extra batteries", "Manual can opener", "Blankets"],
+    supplies: [
+      "Plywood and nails",
+      "Tarps",
+      "Generator (if safe)",
+      "Extra batteries",
+      "Manual can opener",
+      "Blankets",
+    ],
   },
-]
+];
 
 const aiSuggestions: AISuggestion[] = [
   {
     id: "1",
     type: "prediction",
     title: "Increased Seismic Activity Detected",
-    description: "AI models predict 73% chance of moderate earthquake in your region within 48 hours",
+    description:
+      "AI models predict 73% chance of moderate earthquake in your region within 48 hours",
     confidence: 73,
     urgency: "soon",
     location: "San Francisco Bay Area",
@@ -153,7 +170,8 @@ const aiSuggestions: AISuggestion[] = [
     id: "2",
     type: "preparation",
     title: "Wildfire Season Preparation",
-    description: "Weather patterns suggest early wildfire season. Recommend immediate defensible space creation",
+    description:
+      "Weather patterns suggest early wildfire season. Recommend immediate defensible space creation",
     confidence: 89,
     urgency: "immediate",
     location: "Southern California",
@@ -162,37 +180,40 @@ const aiSuggestions: AISuggestion[] = [
     id: "3",
     type: "response",
     title: "Evacuation Route Optimization",
-    description: "Current traffic patterns suggest alternate evacuation routes for faster emergency response",
+    description:
+      "Current traffic patterns suggest alternate evacuation routes for faster emergency response",
     confidence: 95,
     urgency: "monitor",
   },
-]
+];
 
 export default function PrecautionsPage() {
-  const [selectedType, setSelectedType] = useState<string>("all")
-  const [activeTab, setActiveTab] = useState("guides")
+  const [selectedType, setSelectedType] = useState<string>("all");
+  const [activeTab, setActiveTab] = useState("guides");
 
   const disasterIcons = {
     earthquake: Mountain,
     flood: CloudRain,
     wildfire: Flame,
     storm: Zap,
-  }
+  };
 
   const priorityColors = {
     high: "bg-red-500/20 text-red-400 border-red-500/30",
     medium: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
     low: "bg-green-500/20 text-green-400 border-green-500/30",
-  }
+  };
 
   const urgencyColors = {
     immediate: "bg-red-500/20 text-red-400 border-red-500/30",
     soon: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
     monitor: "bg-primary/20 text-primary border-primary/30",
-  }
+  };
 
   const filteredGuides =
-    selectedType === "all" ? safetyGuides : safetyGuides.filter((guide) => guide.type === selectedType)
+    selectedType === "all"
+      ? safetyGuides
+      : safetyGuides.filter((guide) => guide.type === selectedType);
 
   return (
     <div className="min-h-screen bg-background">
@@ -202,9 +223,12 @@ export default function PrecautionsPage() {
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold text-foreground text-glow-green mb-4">Precaution & Response Hub</h1>
+            <h1 className="text-4xl font-bold text-foreground text-glow-green mb-4">
+              Precaution & Response Hub
+            </h1>
             <p className="text-xl text-muted-foreground text-balance max-w-3xl mx-auto">
-              AI-powered safety guidance and emergency response protocols to protect your community
+              AI-powered safety guidance and emergency response protocols to
+              protect your community
             </p>
           </div>
 
@@ -215,9 +239,13 @@ export default function PrecautionsPage() {
                 <CardTitle className="flex items-center space-x-2 text-foreground">
                   <Brain className="w-6 h-6 text-primary" />
                   <span>AI-Powered Insights</span>
-                  <Badge className="bg-primary/20 text-primary border-primary/30">Live</Badge>
+                  <Badge className="bg-primary/20 text-primary border-primary/30">
+                    Live
+                  </Badge>
                 </CardTitle>
-                <CardDescription>Real-time AI analysis and personalized safety recommendations</CardDescription>
+                <CardDescription>
+                  Real-time AI analysis and personalized safety recommendations
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="grid md:grid-cols-3 gap-4">
@@ -227,11 +255,19 @@ export default function PrecautionsPage() {
                       className="p-4 bg-background/50 rounded-lg border border-border glow-green-hover"
                     >
                       <div className="flex items-center justify-between mb-2">
-                        <Badge className={urgencyColors[suggestion.urgency]}>{suggestion.urgency}</Badge>
-                        <span className="text-sm text-primary font-medium">{suggestion.confidence}% confidence</span>
+                        <Badge className={urgencyColors[suggestion.urgency]}>
+                          {suggestion.urgency}
+                        </Badge>
+                        <span className="text-sm text-primary font-medium">
+                          {suggestion.confidence}% confidence
+                        </span>
                       </div>
-                      <h3 className="font-medium text-foreground mb-1">{suggestion.title}</h3>
-                      <p className="text-sm text-muted-foreground mb-2">{suggestion.description}</p>
+                      <h3 className="font-medium text-foreground mb-1">
+                        {suggestion.title}
+                      </h3>
+                      <p className="text-sm text-muted-foreground mb-2">
+                        {suggestion.description}
+                      </p>
                       {suggestion.location && (
                         <div className="flex items-center text-xs text-muted-foreground">
                           <MapPin className="w-3 h-3 mr-1" />
@@ -245,7 +281,11 @@ export default function PrecautionsPage() {
             </Card>
           </div>
 
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <Tabs
+            value={activeTab}
+            onValueChange={setActiveTab}
+            className="space-y-6"
+          >
             <TabsList className="grid w-full grid-cols-4 bg-card/50 border border-border">
               <TabsTrigger
                 value="guides"
@@ -313,9 +353,12 @@ export default function PrecautionsPage() {
               {/* Safety Guides Grid */}
               <div className="grid lg:grid-cols-2 gap-6">
                 {filteredGuides.map((guide) => {
-                  const Icon = disasterIcons[guide.type]
+                  const Icon = disasterIcons[guide.type];
                   return (
-                    <Card key={guide.id} className="bg-card/50 backdrop-blur-sm border-border glow-green-hover">
+                    <Card
+                      key={guide.id}
+                      className="bg-card/50 backdrop-blur-sm border-border glow-green-hover"
+                    >
                       <CardHeader>
                         <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-3">
@@ -323,11 +366,17 @@ export default function PrecautionsPage() {
                               <Icon className="w-6 h-6 text-primary" />
                             </div>
                             <div>
-                              <CardTitle className="text-foreground">{guide.title}</CardTitle>
-                              <CardDescription>{guide.description}</CardDescription>
+                              <CardTitle className="text-foreground">
+                                {guide.title}
+                              </CardTitle>
+                              <CardDescription>
+                                {guide.description}
+                              </CardDescription>
                             </div>
                           </div>
-                          <Badge className={priorityColors[guide.priority]}>{guide.priority}</Badge>
+                          <Badge className={priorityColors[guide.priority]}>
+                            {guide.priority}
+                          </Badge>
                         </div>
                         <div className="flex items-center space-x-2 text-sm text-muted-foreground">
                           <Clock className="w-4 h-4" />
@@ -342,8 +391,13 @@ export default function PrecautionsPage() {
                           </h4>
                           <ul className="space-y-1">
                             {guide.steps.map((step, index) => (
-                              <li key={index} className="text-sm text-muted-foreground flex items-start">
-                                <span className="text-primary mr-2 font-medium">{index + 1}.</span>
+                              <li
+                                key={index}
+                                className="text-sm text-muted-foreground flex items-start"
+                              >
+                                <span className="text-primary mr-2 font-medium">
+                                  {index + 1}.
+                                </span>
                                 {step}
                               </li>
                             ))}
@@ -368,7 +422,7 @@ export default function PrecautionsPage() {
                         </div>
                       </CardContent>
                     </Card>
-                  )
+                  );
                 })}
               </div>
             </TabsContent>
@@ -384,12 +438,16 @@ export default function PrecautionsPage() {
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div className="p-3 bg-red-500/10 rounded-lg border border-red-500/30">
-                      <div className="font-medium text-red-400">Emergency Services</div>
+                      <div className="font-medium text-red-400">
+                        Emergency Services
+                      </div>
                       <div className="text-2xl font-bold text-red-400">100</div>
                     </div>
                     <div className="space-y-2">
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Poison Control</span>
+                        <span className="text-muted-foreground">
+                          Poison Control
+                        </span>
                         <span className="text-foreground">1-800-222-1222</span>
                       </div>
                       <div className="flex justify-between">
@@ -413,16 +471,24 @@ export default function PrecautionsPage() {
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div className="p-3 bg-primary/10 rounded-lg border border-primary/30">
-                      <div className="font-medium text-primary">Weather Radio</div>
-                      <div className="text-sm text-muted-foreground">NOAA Weather Radio frequencies</div>
+                      <div className="font-medium text-primary">
+                        Weather Radio
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        NOAA Weather Radio frequencies
+                      </div>
                     </div>
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Local Emergency</span>
+                        <span className="text-muted-foreground">
+                          Local Emergency
+                        </span>
                         <span className="text-foreground">162.550 MHz</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Backup Channel</span>
+                        <span className="text-muted-foreground">
+                          Backup Channel
+                        </span>
                         <span className="text-foreground">162.400 MHz</span>
                       </div>
                     </div>
@@ -438,14 +504,26 @@ export default function PrecautionsPage() {
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div className="p-3 bg-primary/10 rounded-lg border border-primary/30">
-                      <div className="font-medium text-primary">Emergency Apps</div>
-                      <div className="text-sm text-muted-foreground">Download recommended apps</div>
+                      <div className="font-medium text-primary">
+                        Emergency Apps
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        Download recommended apps
+                      </div>
                     </div>
                     <div className="space-y-2 text-sm">
-                      <div className="text-muted-foreground">• FEMA Mobile App</div>
-                      <div className="text-muted-foreground">• Red Cross Emergency</div>
-                      <div className="text-muted-foreground">• Weather Underground</div>
-                      <div className="text-muted-foreground">• Zello Walkie Talkie</div>
+                      <div className="text-muted-foreground">
+                        • FEMA Mobile App
+                      </div>
+                      <div className="text-muted-foreground">
+                        • Red Cross Emergency
+                      </div>
+                      <div className="text-muted-foreground">
+                        • Weather Underground
+                      </div>
+                      <div className="text-muted-foreground">
+                        • Zello Walkie Talkie
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -460,7 +538,9 @@ export default function PrecautionsPage() {
                       <Home className="w-5 h-5 text-primary" />
                       <span>Home Emergency Kit</span>
                     </CardTitle>
-                    <CardDescription>Essential supplies for 72-hour home shelter</CardDescription>
+                    <CardDescription>
+                      Essential supplies for 72-hour home shelter
+                    </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
@@ -476,11 +556,23 @@ export default function PrecautionsPage() {
                         },
                         {
                           category: "Safety & Tools",
-                          items: ["First aid kit", "Flashlight", "Battery radio", "Multi-tool", "Duct tape"],
+                          items: [
+                            "First aid kit",
+                            "Flashlight",
+                            "Battery radio",
+                            "Multi-tool",
+                            "Duct tape",
+                          ],
                         },
                         {
                           category: "Personal Items",
-                          items: ["Medications", "Important documents", "Cash", "Phone chargers", "Blankets"],
+                          items: [
+                            "Medications",
+                            "Important documents",
+                            "Cash",
+                            "Phone chargers",
+                            "Blankets",
+                          ],
                         },
                       ].map((section, index) => (
                         <div key={index}>
@@ -490,7 +582,10 @@ export default function PrecautionsPage() {
                           </h4>
                           <ul className="space-y-1 ml-6">
                             {section.items.map((item, itemIndex) => (
-                              <li key={itemIndex} className="text-sm text-muted-foreground">
+                              <li
+                                key={itemIndex}
+                                className="text-sm text-muted-foreground"
+                              >
                                 • {item}
                               </li>
                             ))}
@@ -507,22 +602,39 @@ export default function PrecautionsPage() {
                       <Car className="w-5 h-5 text-primary" />
                       <span>Vehicle Emergency Kit</span>
                     </CardTitle>
-                    <CardDescription>Portable supplies for evacuation and travel</CardDescription>
+                    <CardDescription>
+                      Portable supplies for evacuation and travel
+                    </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
                       {[
                         {
                           category: "Vehicle Safety",
-                          items: ["Jumper cables", "Tire repair kit", "Emergency flares", "Reflective triangles"],
+                          items: [
+                            "Jumper cables",
+                            "Tire repair kit",
+                            "Emergency flares",
+                            "Reflective triangles",
+                          ],
                         },
                         {
                           category: "Survival Gear",
-                          items: ["Emergency blankets", "Water bottles", "Energy bars", "First aid supplies"],
+                          items: [
+                            "Emergency blankets",
+                            "Water bottles",
+                            "Energy bars",
+                            "First aid supplies",
+                          ],
                         },
                         {
                           category: "Communication",
-                          items: ["Car charger", "Emergency radio", "Whistle", "Emergency contact list"],
+                          items: [
+                            "Car charger",
+                            "Emergency radio",
+                            "Whistle",
+                            "Emergency contact list",
+                          ],
                         },
                       ].map((section, index) => (
                         <div key={index}>
@@ -532,7 +644,10 @@ export default function PrecautionsPage() {
                           </h4>
                           <ul className="space-y-1 ml-6">
                             {section.items.map((item, itemIndex) => (
-                              <li key={itemIndex} className="text-sm text-muted-foreground">
+                              <li
+                                key={itemIndex}
+                                className="text-sm text-muted-foreground"
+                              >
                                 • {item}
                               </li>
                             ))}
@@ -556,19 +671,33 @@ export default function PrecautionsPage() {
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="p-3 bg-primary/10 rounded-lg border border-primary/30">
-                      <div className="font-medium text-primary mb-2">Family Meeting Points</div>
+                      <div className="font-medium text-primary mb-2">
+                        Family Meeting Points
+                      </div>
                       <div className="space-y-2 text-sm">
                         <div>
-                          <div className="text-foreground">Primary: Home Address</div>
-                          <div className="text-muted-foreground">If safe to return home</div>
+                          <div className="text-foreground">
+                            Primary: Home Address
+                          </div>
+                          <div className="text-muted-foreground">
+                            If safe to return home
+                          </div>
                         </div>
                         <div>
-                          <div className="text-foreground">Secondary: Local School</div>
-                          <div className="text-muted-foreground">Neighborhood evacuation</div>
+                          <div className="text-foreground">
+                            Secondary: Local School
+                          </div>
+                          <div className="text-muted-foreground">
+                            Neighborhood evacuation
+                          </div>
                         </div>
                         <div>
-                          <div className="text-foreground">Regional: City Center</div>
-                          <div className="text-muted-foreground">Area-wide emergency</div>
+                          <div className="text-foreground">
+                            Regional: City Center
+                          </div>
+                          <div className="text-muted-foreground">
+                            Area-wide emergency
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -589,7 +718,9 @@ export default function PrecautionsPage() {
                   <CardContent className="space-y-4">
                     <div className="space-y-3">
                       <div>
-                        <div className="font-medium text-foreground mb-1">Medical Considerations</div>
+                        <div className="font-medium text-foreground mb-1">
+                          Medical Considerations
+                        </div>
                         <ul className="text-sm text-muted-foreground space-y-1">
                           <li>• Prescription medications (7-day supply)</li>
                           <li>• Medical equipment & batteries</li>
@@ -598,7 +729,9 @@ export default function PrecautionsPage() {
                         </ul>
                       </div>
                       <div>
-                        <div className="font-medium text-foreground mb-1">Pet Preparedness</div>
+                        <div className="font-medium text-foreground mb-1">
+                          Pet Preparedness
+                        </div>
                         <ul className="text-sm text-muted-foreground space-y-1">
                           <li>• Pet carriers & leashes</li>
                           <li>• Food & water (3-day supply)</li>
@@ -620,18 +753,28 @@ export default function PrecautionsPage() {
                   <CardContent className="space-y-4">
                     <div className="space-y-3">
                       <div className="p-3 bg-yellow-500/10 rounded-lg border border-yellow-500/30">
-                        <div className="font-medium text-yellow-400 mb-1">Monthly Drills</div>
+                        <div className="font-medium text-yellow-400 mb-1">
+                          Monthly Drills
+                        </div>
                         <div className="text-sm text-muted-foreground">
                           Practice evacuation routes and meeting points
                         </div>
                       </div>
                       <div className="p-3 bg-primary/10 rounded-lg border border-primary/30">
-                        <div className="font-medium text-primary mb-1">Supply Check</div>
-                        <div className="text-sm text-muted-foreground">Review and rotate emergency supplies</div>
+                        <div className="font-medium text-primary mb-1">
+                          Supply Check
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          Review and rotate emergency supplies
+                        </div>
                       </div>
                       <div className="p-3 bg-blue-500/10 rounded-lg border border-blue-500/30">
-                        <div className="font-medium text-blue-400 mb-1">Plan Updates</div>
-                        <div className="text-sm text-muted-foreground">Update contact information and routes</div>
+                        <div className="font-medium text-blue-400 mb-1">
+                          Plan Updates
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          Update contact information and routes
+                        </div>
                       </div>
                     </div>
                   </CardContent>
@@ -642,5 +785,5 @@ export default function PrecautionsPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }
