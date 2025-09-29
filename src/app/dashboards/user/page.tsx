@@ -271,6 +271,24 @@ export default function UserDashboard() {
       return text;
     };
 
+    const extractLatLon = (geometry: any): { lat: number; lon: number } => {
+      // EONET: coordinates may be [lon, lat] or nested arrays for polygons
+      const findPair = (coords: any): [number, number] | null => {
+        if (!Array.isArray(coords)) return null;
+        if (coords.length >= 2 && typeof coords[0] === "number" && typeof coords[1] === "number") {
+          return [coords[1], coords[0]]; // return [lat, lon]
+        }
+        for (const c of coords) {
+          const pair = findPair(c);
+          if (pair) return pair;
+        }
+        return null;
+      };
+      const pair = findPair(geometry?.coordinates);
+      if (!pair) return { lat: 0, lon: 0 };
+      return { lat: pair[0], lon: pair[1] };
+    };
+
     const fetchDisasters = async () => {
       try {
         // Fetch open events from NASA EONET v3
@@ -291,9 +309,7 @@ export default function UserDashboard() {
             const latestGeometry = ev.geometries && ev.geometries.length
               ? ev.geometries[ev.geometries.length - 1]
               : null;
-            const coords = latestGeometry?.coordinates || [0, 0];
-            const lon = Array.isArray(coords) ? coords[0] : 0;
-            const lat = Array.isArray(coords) ? coords[1] : 0;
+            const { lat, lon } = extractLatLon(latestGeometry);
 
             const eventDate = latestGeometry?.date || ev.geometry?.date || ev.closed || ev.open || new Date().toISOString();
 
@@ -308,6 +324,9 @@ export default function UserDashboard() {
                 : "medium";
 
             const niceLocation = cleanLocationFromTitle(ev.title || "", mappedType, lat, lon);
+
+            // Skip invalid coordinates (allow 0 values; only exclude non-finite)
+            if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
 
             return {
               id: String(ev.id ?? ev.title),
@@ -505,34 +524,17 @@ export default function UserDashboard() {
                 </CardHeader>
                 <CardContent>
                   <div className="relative h-96 bg-gradient-to-br from-gray-900 to-black rounded-lg border border-primary/20 overflow-hidden">
-                    {/* Simulated World Map */}
-                   <DisasterMap disasters={disasters} />
-
-                    {/* Disaster Hotspots */}
-                    {disasters.map((disaster) => (
-                      <div
-                        key={disaster.id}
-                        className="absolute w-4 h-4 rounded-full animate-pulse cursor-pointer shadow-[0_0_15px_rgba(34,197,94,0.6)]"
-                        style={{
-                          left: `${
-                            ((disaster.coordinates[1] + 180) / 360) * 100
-                          }%`,
-                          top: `${
-                            ((90 - disaster.coordinates[0]) / 180) * 100
-                          }%`,
-                          backgroundColor:
-                            disaster.severity === "critical"
-                              ? "#ef4444"
-                              : disaster.severity === "high"
-                              ? "#f97316"
-                              : "#22c55e",
-                        }}
-                        title={`${disaster.type} - ${disaster.location}`}
-                        onClick={() => setSelectedDisaster(disaster.id)}
-                      >
-                        <div className="absolute inset-0 rounded-full animate-ping bg-current opacity-75"></div>
+                    {loading ? (
+                      <div className="absolute inset-0 flex items-center justify-center text-gray-300 text-sm">
+                        Loading disasters...
                       </div>
-                    ))}
+                    ) : disasters.length === 0 ? (
+                      <div className="absolute inset-0 flex items-center justify-center text-gray-400 text-sm">
+                        No disasters available.
+                      </div>
+                    ) : (
+                      <DisasterMap disasters={disasters} />
+                    )}
 
                     {/* Legend */}
                     <div className="absolute bottom-4 left-4 bg-black/80 backdrop-blur-sm rounded-lg p-3 border border-primary/20">
@@ -651,19 +653,21 @@ export default function UserDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
+                  {loading && (
+                    <div className="text-sm text-gray-400">Loading...</div>
+                  )}
+                  {!loading && disasters.length === 0 && (
+                    <div className="text-sm text-gray-400">No recent disasters.</div>
+                  )}
                   {disasters.map((disaster) => {
                     const Icon = disasterIcons[disaster.type];
                     return (
-                      <div
+                      <a
                         key={disaster.id}
-                        className="flex items-center justify-between p-4 bg-gray-900/50 rounded-lg border border-primary/10 hover:border-primary/30 transition-all duration-300 glow-green-hover cursor-pointer"
-                        onClick={() =>
-                          setSelectedDisaster(
-                            selectedDisaster === disaster.id
-                              ? null
-                              : disaster.id
-                          )
-                        }
+                        href={`https://news.google.com/search?q=${encodeURIComponent(`${disaster.type} ${disaster.location}`)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-between p-4 bg-gray-900/50 rounded-lg border border-primary/10 hover:border-primary/30 transition-all duration-300 glow-green-hover"
                       >
                         <div className="flex items-center space-x-4">
                           <div className="p-2 bg-primary/10 rounded-lg">
@@ -686,6 +690,16 @@ export default function UserDashboard() {
                                 {disaster.status}
                               </Badge>
                             </div>
+                            <div className="mt-2">
+                              <a
+                                href={`https://news.google.com/search?q=${encodeURIComponent(`${disaster.type} ${disaster.location}`)}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-primary underline text-xs"
+                              >
+                                Latest news
+                              </a>
+                            </div>
                           </div>
                         </div>
                         <div className="text-right">
@@ -697,7 +711,7 @@ export default function UserDashboard() {
                             {disaster.lastUpdate}
                           </div>
                         </div>
-                      </div>
+                      </a>
                     );
                   })}
                 </div>
